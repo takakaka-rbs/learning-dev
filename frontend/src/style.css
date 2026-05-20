@@ -1,0 +1,95 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+  background: #f5f7fa;
+  color: #1a1a2e;
+  line-height: 1.6;
+}
+
+#app-wrapper {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-header {
+  background: #1a1a2e;
+  color: #fff;
+  padding: 0.8rem 2rem;
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+}
+
+.app-header .logo {
+  font-size: 1.2rem;
+  font-weight: bold;
+}
+
+.app-header nav a {
+  color: #a0c4ff;
+  text-decoration: none;
+  font-size: 0.95rem;
+}
+
+.app-header nav a:hover {
+  color: #fff;
+}
+
+main {
+  padding: 2rem;
+  flex: 1;
+}
+
+/* Users View */
+.users-view h1 {
+  font-size: 1.5rem;
+  margin-bottom: 1.5rem;
+  border-left: 4px solid #4361ee;
+  padding-left: 0.75rem;
+}
+
+.users-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.users-table th {
+  background: #4361ee;
+  color: #fff;
+  padding: 0.8rem 1rem;
+  text-align: left;
+  font-size: 0.9rem;
+}
+
+.users-table td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #eef0f4;
+  font-size: 0.9rem;
+}
+
+.users-table tr:last-child td {
+  border-bottom: none;
+}
+
+.users-table tr:hover td {
+  background: #f0f4ff;
+}
+
+.status {
+  color: #555;
+  padding: 1rem 0;
+}
+
+.status.error {
+  color: #e63946;
+}

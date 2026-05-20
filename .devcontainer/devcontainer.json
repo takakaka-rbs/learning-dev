@@ -1,0 +1,42 @@
+{
+  "name": "Full-Stack Dev (Vue3 + Spring + Postgres)",
+  "dockerComposeFile": "../docker-compose.yml",
+  "service": "devcontainer",
+  "workspaceFolder": "/workspace",
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "20"
+    },
+    "ghcr.io/devcontainers/features/java:1": {
+      "version": "21",
+      "installMaven": true
+    }
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "Vue.volar",
+        "vmware.vscode-spring-boot",
+        "redhat.java",
+        "vscjava.vscode-maven",
+        "42Crunch.vscode-openapi",
+        "mtxr.sqltools",
+        "mtxr.sqltools-driver-pg",
+        "esbenp.prettier-vscode",
+        "dbaeumer.vscode-eslint",
+        "anthropic.claude-code"
+      ],
+      "settings": {
+        "java.configuration.updateBuildConfiguration": "automatic",
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "[java]": {
+          "editor.defaultFormatter": "redhat.java"
+        }
+      }
+    }
+  },
+  "forwardPorts": [5173, 8080, 5432],
+  "postCreateCommand": "cd /workspace/frontend && npm install && cd /workspace/backend && mvn dependency:resolve -q && echo '✅ Setup complete!'",
+  "remoteUser": "root"
+}

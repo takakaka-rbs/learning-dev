@@ -1,0 +1,22 @@
+# 自動生成ファイル（コミットしない）
+frontend/src/api/generated/
+backend/src/main/java/com/example/app/jooq/
+backend/src/main/java/com/example/app/generated/
+backend/target/
+
+# Node
+frontend/node_modules/
+frontend/dist/
+
+# IDE
+.idea/
+.vscode/settings.json
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env
+.env
+.env.local
