@@ -7,9 +7,3 @@ CREATE TABLE IF NOT EXISTS users (
     email      VARCHAR(255) NOT NULL UNIQUE,
     created_at TIMESTAMPTZ  NOT NULL DEFAULT NOW()
 );
-
--- サンプルデータ
-INSERT INTO users (name, email) VALUES
-    ('山田太郎', 'yamada@example.com'),
-    ('鈴木花子', 'suzuki@example.com'),
-    ('佐藤次郎', 'sato@example.com');
