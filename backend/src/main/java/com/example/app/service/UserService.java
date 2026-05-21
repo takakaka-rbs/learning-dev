@@ -15,7 +15,7 @@ import java.util.Optional;
  *
  * JOOQのDSLを使ってDBアクセスを行う。
  * JOOQのクラス (Users, UsersRecord) は DDL から自動生成されたもの。
- *   生成コマンド: mvn flyway:migrate jooq-codegen:generate
+ * 生成コマンド: mvn flyway:migrate jooq-codegen:generate
  */
 @Service
 @RequiredArgsConstructor
@@ -52,7 +52,7 @@ public class UserService {
         user.setName(record.getName());
         user.setEmail(record.getEmail());
         if (record.getCreatedAt() != null) {
-            user.setCreatedAt(record.getCreatedAt().toOffsetDateTime());
+            user.setCreatedAt(record.getCreatedAt());
         }
         return user;
     }

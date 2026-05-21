@@ -14,7 +14,8 @@
     "vue": "^3.4.0",
     "vue-router": "^4.3.0",
     "pinia": "^2.1.0",
-    "@vueuse/core": "^10.0.0"
+    "@vueuse/core": "^10.0.0",
+    "@hey-api/client-fetch": "^0.6.0"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.0.0",

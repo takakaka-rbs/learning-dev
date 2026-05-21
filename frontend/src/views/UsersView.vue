@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted } from "vue";
 /**
  * getUsers は openapi.yml の operationId: getUsers から自動生成された関数。
  * User 型も openapi.yml の components/schemas/User から自動生成。
@@ -7,26 +7,26 @@ import { ref, onMounted } from 'vue'
  * 生成コマンド: npm run generate:api
  * 生成元ファイル: openapi/openapi.yml
  */
-import { getUsersUsers } from '@/api/generated/services.gen'
-import type { User } from '@/api/generated/types.gen'
+import { getUsers } from "@/api/generated/services.gen";
+import type { User } from "@/api/generated/types.gen";
 
-const users = ref<User[]>([])
-const loading = ref(false)
-const error = ref<string | null>(null)
+const users = ref<User[]>([]);
+const loading = ref(false);
+const error = ref<string | null>(null);
 
 onMounted(async () => {
-  loading.value = true
-  error.value = null
+  loading.value = true;
+  error.value = null;
   try {
-    const { data, error: apiError } = await getUsersUsers()
-    if (apiError) throw new Error(String(apiError))
-    users.value = data ?? []
+    const data = await getUsers();
+    users.value = data ?? [];
   } catch (e) {
-    error.value = e instanceof Error ? e.message : '予期しないエラーが発生しました'
+    error.value =
+      e instanceof Error ? e.message : "予期しないエラーが発生しました";
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-})
+});
 </script>
 
 <template>
@@ -50,7 +50,13 @@ onMounted(async () => {
           <td>{{ user.id }}</td>
           <td>{{ user.name }}</td>
           <td>{{ user.email }}</td>
-          <td>{{ user.createdAt ? new Date(user.createdAt).toLocaleString('ja-JP') : '-' }}</td>
+          <td>
+            {{
+              user.createdAt
+                ? new Date(user.createdAt).toLocaleString("ja-JP")
+                : "-"
+            }}
+          </td>
         </tr>
       </tbody>
     </table>
