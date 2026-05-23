@@ -6,24 +6,20 @@ updates:
   # ─────────────────────────────────────────
   - package-ecosystem: npm
     directory: /frontend
+    target-branch: dev
     schedule:
       interval: weekly
       day: monday
       time: "09:00"
       timezone: Asia/Tokyo
-    # PRのラベル
     labels:
       - dependencies
       - frontend
-    # 同時に開くPRの最大数
     open-pull-requests-limit: 5
-    # コミットメッセージを conventional commits 形式に合わせる
     commit-message:
       prefix: "build"
       include: scope
-    # 以下は自動マージの候補（minor・patch のみ）
     groups:
-      # Vue関連をまとめてPR1つにする
       vue:
         patterns:
           - "vue"
@@ -34,7 +30,6 @@ updates:
         update-types:
           - minor
           - patch
-      # hey-api関連をまとめる
       hey-api:
         patterns:
           - "@hey-api/*"
@@ -47,6 +42,7 @@ updates:
   # ─────────────────────────────────────────
   - package-ecosystem: maven
     directory: /backend
+    target-branch: dev
     schedule:
       interval: weekly
       day: monday
@@ -60,14 +56,12 @@ updates:
       prefix: "build"
       include: scope
     groups:
-      # Spring Boot関連をまとめる
       spring-boot:
         patterns:
           - "org.springframework.boot:*"
         update-types:
           - minor
           - patch
-      # JOOQ関連をまとめる
       jooq:
         patterns:
           - "org.jooq:*"
@@ -80,6 +74,7 @@ updates:
   # ─────────────────────────────────────────
   - package-ecosystem: github-actions
     directory: /
+    target-branch: dev
     schedule:
       interval: weekly
       day: monday
@@ -93,7 +88,6 @@ updates:
       prefix: "ci"
       include: scope
     groups:
-      # actions関連をまとめる
       actions:
         patterns:
           - "actions/*"
