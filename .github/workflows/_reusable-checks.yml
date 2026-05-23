@@ -4,7 +4,7 @@ on:
   workflow_call:
     inputs:
       fail-on-audit:
-        description: 'High/Critical の脆弱性でCIを失敗させるか（release では true、開発PRでは false）'
+        description: "High/Critical の脆弱性でCIを失敗させるか（release では true、開発PRでは false）"
         required: false
         type: boolean
         default: true
@@ -163,21 +163,21 @@ jobs:
         working-directory: frontend
         run: |
           echo "## 🧪 Jest" >> $GITHUB_STEP_SUMMARY
-          if [ -f test-results/junit.xml ]; then
+          if [ -f test-results/junit.xml ] && grep -q 'tests=' test-results/junit.xml; then
             TESTS=$(grep -o 'tests="[0-9]*"' test-results/junit.xml | head -1 | grep -o '[0-9]*')
             FAILURES=$(grep -o 'failures="[0-9]*"' test-results/junit.xml | head -1 | grep -o '[0-9]*')
             ERRORS=$(grep -o 'errors="[0-9]*"' test-results/junit.xml | head -1 | grep -o '[0-9]*')
             echo "| 項目 | 件数 |" >> $GITHUB_STEP_SUMMARY
             echo "|---|---|" >> $GITHUB_STEP_SUMMARY
-            echo "| ✅ テスト数 | ${TESTS:-0} |" >> $GITHUB_STEP_SUMMARY
-            echo "| ❌ 失敗    | ${FAILURES:-0} |" >> $GITHUB_STEP_SUMMARY
-            echo "| 💥 エラー  | ${ERRORS:-0} |" >> $GITHUB_STEP_SUMMARY
+            echo "| テスト数 | ${TESTS:-0} |" >> $GITHUB_STEP_SUMMARY
+            echo "| 失敗 | ${FAILURES:-0} |" >> $GITHUB_STEP_SUMMARY
+            echo "| エラー | ${ERRORS:-0} |" >> $GITHUB_STEP_SUMMARY
           else
-            echo "⚠️ テスト結果ファイルが見つかりません（テストが存在しない可能性があります）" >> $GITHUB_STEP_SUMMARY
+            echo "テストファイルなし（スキップ）" >> $GITHUB_STEP_SUMMARY
           fi
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 📊 カバレッジ" >> $GITHUB_STEP_SUMMARY
-          echo "詳細は Artifacts の \`test-frontend-coverage\` を確認してください" >> $GITHUB_STEP_SUMMARY
+          echo "### カバレッジ" >> $GITHUB_STEP_SUMMARY
+          echo "詳細は Artifacts の test-frontend-coverage を確認してください" >> $GITHUB_STEP_SUMMARY
 
       - name: Upload test results
         if: always()

@@ -6,6 +6,7 @@ backend/target/
 
 # フロントビルド成果物
 frontend/dist/
+frontend/coverage
 
 # Node
 frontend/node_modules/
