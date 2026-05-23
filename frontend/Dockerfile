@@ -15,8 +15,13 @@ COPY frontend/ .
 
 # openapi.yml のパスを Docker 環境用に上書きして生成 → ビルド
 # ローカルは ../openapi だが Docker では ./openapi にコピーしているため
-RUN ./node_modules/.bin/openapi-ts --input ./openapi/openapi.yml --output src/api/generated && npm run build
-
+# openapi-ts.config.ts が読まれるよう明示的に設定ファイルを指定
+RUN ./node_modules/.bin/openapi-ts \
+    --input ./openapi/openapi.yml \
+    --output src/api/generated \
+    --client fetch \
+  && npm run build
+  
 # ── ② 本番ステージ ──────────────────────────────
 FROM nginx:alpine AS runner
 
