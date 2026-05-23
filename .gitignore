@@ -1,8 +1,6 @@
 # 自動生成ファイル（コミットしない）
-frontend/src/api/generated/
-backend/src/main/java/com/example/app/jooq/
-backend/src/main/java/com/example/app/generated/
 backend/target/
+backend/.openapi-generator
 
 # フロントビルド成果物
 frontend/dist/

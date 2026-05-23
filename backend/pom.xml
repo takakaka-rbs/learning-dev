@@ -133,6 +133,7 @@
   </dependencies>
 
   <build>
+  
     <plugins>
       <!-- Spring Boot Plugin -->
       <plugin>
@@ -162,7 +163,13 @@
             <configuration>
               <inputSpec>${project.basedir}/../openapi/openapi.yml</inputSpec>
               <generatorName>spring</generatorName>
-              <output>${project.build.directory}/generated-sources/openapi</output>
+              <!--
+                output をプロジェクトルートにすることで
+                src/main/java/com/example/app/generated/ に生成される。
+                .openapi-generator-ignore で pom.xml/README.md の上書きを防いでいる。
+                openapi.yml を変更したら make generate を実行してコミットする。
+              -->
+              <output>${project.basedir}</output>
               <apiPackage>com.example.app.generated.api</apiPackage>
               <modelPackage>com.example.app.generated.model</modelPackage>
               <configOptions>
