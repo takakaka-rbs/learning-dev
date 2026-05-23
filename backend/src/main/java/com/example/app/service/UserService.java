@@ -21,39 +21,39 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class UserService {
 
-    private final DSLContext dsl;
+  private final DSLContext dsl;
 
-    /**
-     * ユーザー一覧を取得する
-     */
-    public List<User> findAll() {
-        return dsl.selectFrom(Users.USERS)
-                .orderBy(Users.USERS.ID.asc())
-                .fetch()
-                .map(this::toModel);
-    }
+  /**
+   * ユーザー一覧を取得する
+   */
+  public List<User> findAll() {
+    return dsl.selectFrom(Users.USERS)
+        .orderBy(Users.USERS.ID.asc())
+        .fetch()
+        .map(this::toModel);
+  }
 
-    /**
-     * IDでユーザーを取得する
-     */
-    public Optional<User> findById(Long id) {
-        return dsl.selectFrom(Users.USERS)
-                .where(Users.USERS.ID.eq(id))
-                .fetchOptional()
-                .map(this::toModel);
-    }
+  /**
+   * IDでユーザーを取得する
+   */
+  public Optional<User> findById(Long id) {
+    return dsl.selectFrom(Users.USERS)
+        .where(Users.USERS.ID.eq(id))
+        .fetchOptional()
+        .map(this::toModel);
+  }
 
-    /**
-     * JOOQ の Record → OpenAPI 生成モデルへの変換
-     */
-    private User toModel(UsersRecord record) {
-        User user = new User();
-        user.setId(record.getId());
-        user.setName(record.getName());
-        user.setEmail(record.getEmail());
-        if (record.getCreatedAt() != null) {
-            user.setCreatedAt(record.getCreatedAt());
-        }
-        return user;
+  /**
+   * JOOQ の Record → OpenAPI 生成モデルへの変換
+   */
+  private User toModel(UsersRecord record) {
+    User user = new User();
+    user.setId(record.getId());
+    user.setName(record.getName());
+    user.setEmail(record.getEmail());
+    if (record.getCreatedAt() != null) {
+      user.setCreatedAt(record.getCreatedAt());
     }
+    return user;
+  }
 }

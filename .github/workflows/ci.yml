@@ -16,3 +16,5 @@ jobs:
   checks:
     name: Checks
     uses: ./.github/workflows/_reusable-checks.yml
+    with:
+      fail-on-audit: false

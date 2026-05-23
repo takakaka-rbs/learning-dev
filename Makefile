@@ -1,4 +1,9 @@
-.PHONY: generate generate-front generate-back setup dev-front dev-back migrate help
+.PHONY: generate generate-front generate-back setup \
+        dev-front dev-back dev stop \
+        lint lint-front lint-back \
+        test test-front test-back \
+        check check-front check-back check-all \
+        migrate build help
 
 # ─────────────────────────────────────────
 # コード生成
@@ -29,6 +34,64 @@ migrate:
 	@echo "✅ DB マイグレーション & JOOQ 生成完了"
 
 # ─────────────────────────────────────────
+# 静的解析（Lint）
+# ─────────────────────────────────────────
+
+## フロント + バック 静的解析
+lint: lint-front lint-back
+	@echo "✅ Lint 完了"
+
+## フロント静的解析 (ESLint)
+lint-front:
+	@echo "⚡ [Front] ESLint 実行中..."
+	cd frontend && npm run lint
+
+## バック静的解析 (Checkstyle)
+lint-back:
+	@echo "⚡ [Back] Checkstyle 実行中..."
+	cd backend && mvn checkstyle:check --no-transfer-progress \
+	  && echo "✅ Checkstyle 成功" \
+	  || { echo "❌ Checkstyle 失敗"; exit 1; }
+
+# ─────────────────────────────────────────
+# テスト
+# ─────────────────────────────────────────
+
+## フロント + バック テスト
+test: test-front test-back
+	@echo "✅ テスト完了"
+
+## フロントテスト (Vitest)
+test-front:
+	@echo "⚡ [Front] テスト実行中..."
+	cd frontend && npm run test --if-present
+
+## バックテスト (JUnit)
+test-back:
+	@echo "⚡ [Back] テスト実行中..."
+	cd backend && mvn test --no-transfer-progress
+
+# ─────────────────────────────────────────
+# 静的解析 + テスト まとめて実行
+# ─────────────────────────────────────────
+
+## フロント + バック 静的解析 & テスト
+check: check-front check-back
+	@echo "✅ 静的解析 & テスト 完了"
+
+## フロントのみ 静的解析 & テスト
+check-front: lint-front test-front
+	@echo "✅ [Front] チェック完了"
+
+## バックのみ 静的解析 & テスト
+check-back: lint-back test-back
+	@echo "✅ [Back] チェック完了"
+
+## 静的解析 & テスト & ビルドまで（push前の最終確認用）
+check-all: check build
+	@echo "✅ 全チェック & ビルド完了 → push OK"
+
+# ─────────────────────────────────────────
 # 初回セットアップ（devcontainer 起動直後に1回だけ実行）
 # ─────────────────────────────────────────
 
@@ -40,6 +103,7 @@ setup:
 	$(MAKE) migrate
 	$(MAKE) generate
 	@echo "✅ セットアップ完了！　make dev-front / make dev-back で起動できます"
+
 # ─────────────────────────────────────────
 # 開発サーバー起動 / 停止
 # ─────────────────────────────────────────
@@ -67,6 +131,19 @@ stop:
 	@pkill -f "spring-boot" || true
 	@pkill -f "vite" || true
 	@echo "✅ 停止完了"
+
+# ─────────────────────────────────────────
+# ビルド
+# ─────────────────────────────────────────
+
+## ビルド（生成 → フロント・バックまとめてビルド）
+build: generate
+	@echo "🔨 フロントビルド中..."
+	cd frontend && npm run build
+	@echo "🔨 バックビルド中..."
+	cd backend && mvn package -DskipTests
+	@echo "✅ ビルド完了"
+
 # ─────────────────────────────────────────
 # ヘルプ
 # ─────────────────────────────────────────
@@ -74,8 +151,29 @@ help:
 	@echo ""
 	@echo "使い方:"
 	@echo "  make setup          初回セットアップ（devcontainer起動後に1回）"
+	@echo ""
 	@echo "  make generate       openapi.yml 変更後にフロント・バック一括生成"
+	@echo "  make generate-front フロントのみ生成"
+	@echo "  make generate-back  バックのみ生成"
+	@echo ""
 	@echo "  make migrate        DDL変更後にFlywayとJOOQ生成を実行"
+	@echo ""
+	@echo "  make lint           フロント + バック 静的解析"
+	@echo "  make lint-front     フロントのみ静的解析"
+	@echo "  make lint-back      バックのみ静的解析"
+	@echo ""
+	@echo "  make test           フロント + バック テスト"
+	@echo "  make test-front     フロントのみテスト"
+	@echo "  make test-back      バックのみテスト"
+	@echo ""
+	@echo "  make check          フロント + バック 静的解析 & テスト"
+	@echo "  make check-front    フロントのみ 静的解析 & テスト"
+	@echo "  make check-back     バックのみ 静的解析 & テスト"
+	@echo ""
+	@echo "  make dev            バック + フロント まとめて起動"
 	@echo "  make dev-front      フロント開発サーバー起動"
 	@echo "  make dev-back       バック開発サーバー起動"
+	@echo "  make stop           全サービス停止"
+	@echo ""
+	@echo "  make build          ビルド（生成 → フロント・バック）"
 	@echo ""

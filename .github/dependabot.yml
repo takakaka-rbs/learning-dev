@@ -1,0 +1,103 @@
+version: 2
+
+updates:
+  # ─────────────────────────────────────────
+  # フロントエンド (npm)
+  # ─────────────────────────────────────────
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: Asia/Tokyo
+    # PRのラベル
+    labels:
+      - dependencies
+      - frontend
+    # 同時に開くPRの最大数
+    open-pull-requests-limit: 5
+    # コミットメッセージを conventional commits 形式に合わせる
+    commit-message:
+      prefix: "build"
+      include: scope
+    # 以下は自動マージの候補（minor・patch のみ）
+    groups:
+      # Vue関連をまとめてPR1つにする
+      vue:
+        patterns:
+          - "vue"
+          - "vue-router"
+          - "pinia"
+          - "@vitejs/plugin-vue"
+          - "vue-tsc"
+        update-types:
+          - minor
+          - patch
+      # hey-api関連をまとめる
+      hey-api:
+        patterns:
+          - "@hey-api/*"
+        update-types:
+          - minor
+          - patch
+
+  # ─────────────────────────────────────────
+  # バックエンド (Maven)
+  # ─────────────────────────────────────────
+  - package-ecosystem: maven
+    directory: /backend
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: Asia/Tokyo
+    labels:
+      - dependencies
+      - backend
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "build"
+      include: scope
+    groups:
+      # Spring Boot関連をまとめる
+      spring-boot:
+        patterns:
+          - "org.springframework.boot:*"
+        update-types:
+          - minor
+          - patch
+      # JOOQ関連をまとめる
+      jooq:
+        patterns:
+          - "org.jooq:*"
+        update-types:
+          - minor
+          - patch
+
+  # ─────────────────────────────────────────
+  # GitHub Actions
+  # ─────────────────────────────────────────
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: Asia/Tokyo
+    labels:
+      - dependencies
+      - ci
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "ci"
+      include: scope
+    groups:
+      # actions関連をまとめる
+      actions:
+        patterns:
+          - "actions/*"
+          - "docker/*"
+        update-types:
+          - minor
+          - patch

@@ -133,6 +133,7 @@
   </dependencies>
 
   <build>
+  
     <plugins>
       <!-- Spring Boot Plugin -->
       <plugin>
@@ -162,7 +163,13 @@
             <configuration>
               <inputSpec>${project.basedir}/../openapi/openapi.yml</inputSpec>
               <generatorName>spring</generatorName>
-              <output>${project.build.directory}/generated-sources/openapi</output>
+              <!--
+                output をプロジェクトルートにすることで
+                src/main/java/com/example/app/generated/ に生成される。
+                .openapi-generator-ignore で pom.xml/README.md の上書きを防いでいる。
+                openapi.yml を変更したら make generate を実行してコミットする。
+              -->
+              <output>${project.basedir}</output>
               <apiPackage>com.example.app.generated.api</apiPackage>
               <modelPackage>com.example.app.generated.model</modelPackage>
               <configOptions>
@@ -229,6 +236,79 @@
           <failsOnError>true</failsOnError>
           <!-- 自動生成コードは対象外 -->
           <excludes>**/generated/**,**/jooq/**</excludes>
+          <!-- XML レポートを出力（CI サマリー用） -->
+          <outputFileFormat>xml</outputFileFormat>
+          <outputFile>${project.build.directory}/checkstyle-result.xml</outputFile>
+        </configuration>
+      </plugin>
+
+      <!-- JaCoCo: テストカバレッジ計測 -->
+      <plugin>
+        <groupId>org.jacoco</groupId>
+        <artifactId>jacoco-maven-plugin</artifactId>
+        <version>0.8.12</version>
+        <configuration>
+          <!-- 自動生成コードをカバレッジ対象外 -->
+          <excludes>
+            <exclude>**/generated/**</exclude>
+            <exclude>**/jooq/**</exclude>
+          </excludes>
+        </configuration>
+        <executions>
+          <!-- テスト実行前にエージェントをセット -->
+          <execution>
+            <id>prepare-agent</id>
+            <goals><goal>prepare-agent</goal></goals>
+          </execution>
+          <!-- テスト後にHTMLレポートを生成 -->
+          <execution>
+            <id>report</id>
+            <phase>test</phase>
+            <goals><goal>report</goal></goals>
+          </execution>
+          <!--
+            カバレッジ目標（下回るとビルド失敗）
+            開発初期など一時的にスキップしたい場合:
+              mvn test -Djacoco.skip=true
+          -->
+          <execution>
+            <id>check</id>
+            <phase>test</phase>
+            <goals><goal>check</goal></goals>
+            <configuration>
+              <rules>
+                <rule>
+                  <element>BUNDLE</element>
+                  <limits>
+                    <limit>
+                      <counter>LINE</counter>
+                      <value>COVEREDRATIO</value>
+                      <minimum>0.70</minimum>
+                    </limit>
+                    <limit>
+                      <counter>BRANCH</counter>
+                      <value>COVEREDRATIO</value>
+                      <minimum>0.70</minimum>
+                    </limit>
+                    <limit>
+                      <counter>METHOD</counter>
+                      <value>COVEREDRATIO</value>
+                      <minimum>0.70</minimum>
+                    </limit>
+                  </limits>
+                </rule>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!-- Surefire: JUnit テスト結果を XML で出力（CI サマリー用） -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <reportsDirectory>${project.build.directory}/surefire-reports</reportsDirectory>
         </configuration>
       </plugin>
     </plugins>

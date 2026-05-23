@@ -1,8 +1,6 @@
-# アプリ開発勉強リポジトリ
-
 # フルスタック開発テンプレート
 
-Vue3 + Spring Boot + PostgreSQL による Spec 駆動開発（OpenAPI）テンプレートを利用している
+Vue3 + Spring Boot + PostgreSQL による Spec 駆動開発（OpenAPI）テンプレート
 
 ---
 
@@ -107,7 +105,23 @@ make dev-back       # バックのみ起動 (http://localhost:8080)
 make dev-front      # フロントのみ起動 (http://localhost:5173)
 
 # 停止
-make stop           # バック・フロントをまとめて停止
+make stop
+
+# 静的解析
+make lint           # フロント + バック
+make lint-front     # ESLint
+make lint-back      # Checkstyle
+
+# テスト
+make test           # フロント + バック
+make test-front     # Vitest
+make test-back      # JUnit
+
+# 静的解析 + テスト まとめて実行（push前の確認に使う）
+make check          # フロント + バック
+make check-back     # バックのみ
+make check-front    # フロントのみ
+make check-all      # 静的解析 + テスト + ビルドまで
 
 # ビルド（生成 → フロント・バックまとめてビルド）
 make build
@@ -133,6 +147,107 @@ make help
 2. `make migrate` を実行する
 3. 生成された JOOQ クラスをサービスからインポートして使う
 
+### push 前の確認
+
+```bash
+make check-all   # 静的解析 + テスト + ビルド が全部通ればOK
+```
+
+---
+
+## コミットメッセージ規約
+
+[Conventional Commits](https://www.conventionalcommits.org/) に従う。
+husky + commitlint により、規約に違反したメッセージはコミット時に自動で弾かれる。
+
+### フォーマット
+
+```
+<type>: <subject>
+```
+
+### type 一覧とバージョンへの影響
+
+| type        | 意味                       | バージョン変動                |
+| ----------- | -------------------------- | ----------------------------- |
+| `feat!`     | 破壊的変更を含む新機能     | major up（例: 1.0.0 → 2.0.0） |
+| `fix!`      | 破壊的変更を含むバグ修正   | major up                      |
+| `refactor!` | 破壊的変更を含むリファクタ | major up                      |
+| `feat`      | 新機能                     | minor up（例: 1.0.0 → 1.1.0） |
+| `fix`       | バグ修正                   | patch up（例: 1.0.0 → 1.0.1） |
+| `perf`      | パフォーマンス改善         | patch up                      |
+| `refactor`  | リファクタリング           | patch up                      |
+| `docs`      | ドキュメントのみの変更     | 変動なし                      |
+| `style`     | フォーマット等             | 変動なし                      |
+| `test`      | テストの追加・修正         | 変動なし                      |
+| `build`     | ビルド・依存関係の変更     | 変動なし                      |
+| `ci`        | CI設定の変更               | 変動なし                      |
+| `chore`     | その他                     | 変動なし                      |
+| `revert`    | コミットの取り消し         | 変動なし                      |
+
+`!` は破壊的変更（Breaking Change）を意味する。どの type に付けても major up になる。
+
+### 例
+
+```bash
+git commit -m "feat: ユーザー検索APIを追加"
+git commit -m "fix: ログイン時にエラーが発生する問題を修正"
+git commit -m "feat!: 認証方式をJWTに変更"
+```
+
+---
+
+## ブランチ戦略と CI/CD
+
+### ブランチ構成
+
+```
+main  ← 本番リリース用（直接pushしない）
+ └── dev  ← 開発統合ブランチ
+      └── feature/xxx  ← 機能開発ブランチ（ここで作業する）
+```
+
+### コーディングから本番リリースまでの流れ
+
+```
+① feature ブランチで開発
+        │  make check-all でローカル確認
+        │  git push → CI が自動実行
+        ▼
+② feature → dev に PR & マージ
+        │  Release (dev) ワークフローが自動実行
+        │    セキュリティチェック・Lint・テスト
+        │    プレリリースバージョニング（例: v1.1.0-dev.1）
+        │    Docker イメージ build & push（latest タグなし）
+        │    JAR・npm パッケージを GitHub Packages に publish
+        ▼
+③ dev → main に PR & マージ
+           Release ワークフローが自動実行
+             セキュリティチェック・Lint・テスト
+             正式バージョニング（例: v1.1.0）
+             Docker イメージ build & push（latest タグあり）
+             JAR・npm パッケージを GitHub Packages に publish
+```
+
+### 各ワークフローの詳細
+
+| ワークフロー  | トリガー                      | 実行内容                                                            |
+| ------------- | ----------------------------- | ------------------------------------------------------------------- |
+| CI            | feature ブランチへの push・PR | セキュリティチェック・Lint・テスト                                  |
+| Release (dev) | dev ブランチへの push         | checks + バージョニング(プレリリース) + Docker + JAR + npm          |
+| Release       | main ブランチへの push        | checks + バージョニング(正式) + Docker + JAR + npm + GitHub Release |
+
+### CI で実行されるチェック内容
+
+| チェック                 | ツール                 | 概要                                                             |
+| ------------------------ | ---------------------- | ---------------------------------------------------------------- |
+| セキュリティ（フロント） | npm audit              | 依存ライブラリの脆弱性チェック（high以上で失敗）                 |
+| セキュリティ（バック）   | OWASP Dependency Check | 依存JARの脆弱性チェック（CVSS 7以上で失敗）                      |
+| 静的解析（フロント）     | ESLint                 | コード品質チェック                                               |
+| 静的解析（バック）       | Checkstyle             | Googleスタイルに基づくコード規約チェック                         |
+| テスト（フロント）       | Vitest                 | ユニットテスト                                                   |
+| テスト（バック）         | JUnit + JaCoCo         | ユニットテスト・カバレッジチェック（行・分岐・メソッド 70%以上） |
+
 ---
 
 ## アクセス先
@@ -153,8 +268,19 @@ make help
 .
 ├── .devcontainer/
 │   └── devcontainer.json            # devcontainer設定（拡張機能・ポート転送など）
+├── .github/
+│   ├── actions/
+│   │   ├── setup-frontend/          # フロント共通セットアップ Action
+│   │   └── setup-backend/           # バック共通セットアップ Action
+│   └── workflows/
+│       ├── _reusable-checks.yml     # 共通チェック（セキュリティ・Lint・テスト）
+│       ├── ci.yml                   # feature ブランチ用CI
+│       ├── release-dev.yml          # dev ブランチ用リリース
+│       └── release.yml              # main ブランチ用リリース
 ├── docker-compose.yml               # PostgreSQL + devcontainerの定義
 ├── Makefile                         # コマンド集約
+├── commitlint.config.js             # コミットメッセージ規約設定
+├── package.json                     # husky / commitlint のルート設定
 ├── openapi/
 │   └── openapi.yml                  # ★ API仕様（唯一の真実）
 ├── frontend/                        # Vue3アプリ
@@ -169,10 +295,11 @@ make help
     │   ├── controller/              # ★ 手書き（生成interfaceをimplements）
     │   ├── service/                 # ビジネスロジック
     │   ├── jooq/                    # 自動生成JOOQクラス ※git管理しない
-    │   └── generated/              # 自動生成APIモデル ※git管理しない
+    │   └── generated/               # 自動生成APIモデル ※git管理しない
     ├── src/main/resources/
     │   ├── application.yml
     │   └── db/migration/            # ★ DDLをここに追加
+    ├── checkstyle.xml               # Checkstyle設定（Googleスタイル準拠）
     └── pom.xml
 ```
 
