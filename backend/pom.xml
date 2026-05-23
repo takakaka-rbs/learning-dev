@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+         https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-parent</artifactId>
+    <version>3.3.0</version>
+    <relativePath/>
+  </parent>
+
+  <groupId>com.example</groupId>
+  <artifactId>app</artifactId>
+  <version>0.0.1-SNAPSHOT</version>
+  <name>app</name>
+
+  <properties>
+    <java.version>21</java.version>
+    <openapi-generator.version>7.6.0</openapi-generator.version>
+    <jooq.version>3.19.10</jooq.version>
+    <flyway.version>10.15.0</flyway.version>
+
+    <!-- DB接続設定: 環境変数があればそちらを優先、なければデフォルト値を使用 -->
+    <!-- Maven は ${env.VAR:default} の書き方をサポートしないため、ここで定義する -->
+    <db.host>${env.DB_HOST}</db.host>
+    <db.port>${env.DB_PORT}</db.port>
+    <db.name>${env.DB_NAME}</db.name>
+    <db.user>${env.DB_USER}</db.user>
+    <db.password>${env.DB_PASSWORD}</db.password>
+  </properties>
+
+  <!-- 環境変数が未設定のときのデフォルト値を profile で定義 -->
+  <profiles>
+    <profile>
+      <id>local</id>
+      <activation>
+        <!-- DB_HOST 環境変数が未設定のときに自動で有効になる -->
+        <property>
+          <name>!env.DB_HOST</name>
+        </property>
+      </activation>
+      <properties>
+        <db.host>localhost</db.host>
+        <db.port>5432</db.port>
+        <db.name>appdb</db.name>
+        <db.user>appuser</db.user>
+        <db.password>apppassword</db.password>
+      </properties>
+    </profile>
+  </profiles>
+
+  <dependencies>
+    <!-- Spring Boot -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-validation</artifactId>
+    </dependency>
+
+    <!-- JOOQ (ORマッパー / DSL) -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-jooq</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.jooq</groupId>
+      <artifactId>jooq</artifactId>
+      <version>${jooq.version}</version>
+    </dependency>
+
+    <!-- Flyway (DBマイグレーション / DDL管理) -->
+    <dependency>
+      <groupId>org.flywaydb</groupId>
+      <artifactId>flyway-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.flywaydb</groupId>
+      <artifactId>flyway-database-postgresql</artifactId>
+    </dependency>
+
+    <!-- PostgreSQL Driver -->
+    <dependency>
+      <groupId>org.postgresql</groupId>
+      <artifactId>postgresql</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+
+    <!-- OpenAPI generated code が使うアノテーション -->
+    <dependency>
+      <groupId>org.springdoc</groupId>
+      <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+      <version>2.5.0</version>
+    </dependency>
+    <dependency>
+      <groupId>io.swagger.core.v3</groupId>
+      <artifactId>swagger-annotations</artifactId>
+      <version>2.2.22</version>
+    </dependency>
+    <dependency>
+      <groupId>org.openapitools</groupId>
+      <artifactId>jackson-databind-nullable</artifactId>
+      <version>0.2.6</version>
+    </dependency>
+
+    <!-- Lombok -->
+    <dependency>
+      <groupId>org.projectlombok</groupId>
+      <artifactId>lombok</artifactId>
+      <optional>true</optional>
+    </dependency>
+
+    <!-- Test -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <!-- Spring Boot Plugin -->
+      <plugin>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-maven-plugin</artifactId>
+        <configuration>
+          <excludes>
+            <exclude>
+              <groupId>org.projectlombok</groupId>
+              <artifactId>lombok</artifactId>
+            </exclude>
+          </excludes>
+        </configuration>
+      </plugin>
+
+      <!-- ① OpenAPI Generator: openapi.yml → Spring Controllerインターフェース自動生成 -->
+      <plugin>
+        <groupId>org.openapitools</groupId>
+        <artifactId>openapi-generator-maven-plugin</artifactId>
+        <version>${openapi-generator.version}</version>
+        <executions>
+          <execution>
+            <id>generate-server</id>
+            <goals>
+              <goal>generate</goal>
+            </goals>
+            <configuration>
+              <inputSpec>${project.basedir}/../openapi/openapi.yml</inputSpec>
+              <generatorName>spring</generatorName>
+              <output>${project.build.directory}/generated-sources/openapi</output>
+              <apiPackage>com.example.app.generated.api</apiPackage>
+              <modelPackage>com.example.app.generated.model</modelPackage>
+              <configOptions>
+                <delegatePattern>false</delegatePattern>
+                <interfaceOnly>true</interfaceOnly>
+                <useSpringBoot3>true</useSpringBoot3>
+                <useTags>true</useTags>
+                <dateLibrary>java8</dateLibrary>
+                <openApiNullable>true</openApiNullable>
+              </configOptions>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!-- ② JOOQ Codegen: DDL (Flyway migration) → Javaクラス自動生成 -->
+      <plugin>
+        <groupId>org.jooq</groupId>
+        <artifactId>jooq-codegen-maven</artifactId>
+        <version>${jooq.version}</version>
+        <configuration>
+          <jdbc>
+            <driver>org.postgresql.Driver</driver>
+            <url>jdbc:postgresql://${db.host}:${db.port}/${db.name}</url>
+            <user>${db.user}</user>
+            <password>${db.password}</password>
+          </jdbc>
+          <generator>
+            <database>
+              <name>org.jooq.meta.postgres.PostgresDatabase</name>
+              <inputSchema>public</inputSchema>
+              <includes>.*</includes>
+              <excludes>flyway_schema_history</excludes>
+            </database>
+            <target>
+              <packageName>com.example.app.jooq</packageName>
+              <directory>src/main/java</directory>
+            </target>
+          </generator>
+        </configuration>
+      </plugin>
+
+      <!-- Flyway Maven Plugin (単体で migrate を実行したいとき用) -->
+      <plugin>
+        <groupId>org.flywaydb</groupId>
+        <artifactId>flyway-maven-plugin</artifactId>
+        <version>${flyway.version}</version>
+        <configuration>
+          <url>jdbc:postgresql://${db.host}:${db.port}/${db.name}</url>
+          <user>${db.user}</user>
+          <password>${db.password}</password>
+          <locations>filesystem:src/main/resources/db/migration</locations>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>
