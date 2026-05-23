@@ -17,6 +17,15 @@
   <version>0.0.1-SNAPSHOT</version>
   <name>app</name>
 
+  <!-- GitHub Packages (Maven) への publish 先 -->
+  <distributionManagement>
+    <repository>
+      <id>github</id>
+      <name>GitHub Packages</name>
+      <url>https://maven.pkg.github.com/${env.GITHUB_REPOSITORY}</url>
+    </repository>
+  </distributionManagement>
+
   <properties>
     <java.version>21</java.version>
     <openapi-generator.version>7.6.0</openapi-generator.version>
@@ -206,6 +215,20 @@
           <user>${db.user}</user>
           <password>${db.password}</password>
           <locations>filesystem:src/main/resources/db/migration</locations>
+        </configuration>
+      </plugin>
+
+      <!-- Checkstyle -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-checkstyle-plugin</artifactId>
+        <version>3.4.0</version>
+        <configuration>
+          <configLocation>checkstyle.xml</configLocation>
+          <consoleOutput>true</consoleOutput>
+          <failsOnError>true</failsOnError>
+          <!-- 自動生成コードは対象外 -->
+          <excludes>**/generated/**,**/jooq/**</excludes>
         </configuration>
       </plugin>
     </plugins>

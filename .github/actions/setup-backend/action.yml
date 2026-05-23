@@ -1,0 +1,11 @@
+name: Setup Backend
+description: Java・Mavenセットアップをまとめた composite action
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-java@v4
+      with:
+        java-version: 21
+        distribution: temurin
+        cache: maven
