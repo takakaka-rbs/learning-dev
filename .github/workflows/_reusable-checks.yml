@@ -58,7 +58,7 @@ jobs:
 
       - name: Upload audit report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: security-frontend-report
           path: frontend/audit-result.json
@@ -103,7 +103,7 @@ jobs:
 
       - name: Upload ESLint report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: lint-frontend-report
           path: frontend/eslint-result.txt
@@ -135,7 +135,7 @@ jobs:
 
       - name: Upload Checkstyle report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: lint-backend-report
           path: |
@@ -181,7 +181,7 @@ jobs:
 
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: test-frontend-results
           path: frontend/test-results/
@@ -189,7 +189,7 @@ jobs:
 
       - name: Upload coverage report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: test-frontend-coverage
           path: frontend/coverage/
@@ -263,7 +263,7 @@ jobs:
 
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: test-backend-results
           path: backend/target/surefire-reports/
@@ -271,7 +271,7 @@ jobs:
 
       - name: Upload coverage report (JaCoCo)
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: test-backend-coverage
           path: backend/target/site/jacoco/
