@@ -12,7 +12,9 @@
     "preview": "vite preview",
     "lint": "eslint . --fix",
     "format": "prettier --write src/",
-    "generate:api": "openapi-ts --input ../openapi/openapi.yml --output src/api/generated --client fetch"
+    "generate:api": "openapi-ts --input ../openapi/openapi.yml --output src/api/generated --client fetch",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "vue": "^3.4.0",
@@ -30,6 +32,11 @@
     "eslint": "^9.0.0",
     "eslint-plugin-vue": "^9.0.0",
     "typescript-eslint": "^8.0.0",
-    "prettier": "^3.0.0"
+    "prettier": "^3.0.0",
+    "vitest": "^1.0.0",
+    "@vitest/coverage-v8": "^1.0.0",
+    "@vitest/ui": "^1.0.0",
+    "jsdom": "^24.0.0",
+    "@vue/test-utils": "^2.4.0"
   }
 }

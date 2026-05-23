@@ -56,6 +56,8 @@ export default {
     'type-empty': [2, 'never'],
     // subject（説明文）は必須
     'subject-empty': [2, 'never'],
+    // subject の大文字・小文字チェックを無効化（日本語対応）
+    'subject-case': [0],
     // subject の末尾にピリオド禁止
     'subject-full-stop': [2, 'never', '.'],
     // ヘッダーの最大文字数

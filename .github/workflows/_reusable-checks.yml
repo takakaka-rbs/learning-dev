@@ -15,11 +15,40 @@ jobs:
 
       - uses: ./.github/actions/setup-frontend
         with:
-          generate-api: "false"   # セキュリティチェックにAPIクライアント生成は不要
+          generate-api: "false"
 
       - name: Audit dependencies
         working-directory: frontend
-        run: npm audit --audit-level=high
+        run: |
+          npm audit --audit-level=high --json > audit-result.json || true
+
+      - name: Write audit summary
+        if: always()
+        working-directory: frontend
+        run: |
+          echo "## 🔒 Security / Frontend" >> $GITHUB_STEP_SUMMARY
+          CRITICAL=$(cat audit-result.json | node -e "const d=JSON.parse(require('fs').readFileSync('/dev/stdin','utf8')); console.log(d.metadata?.vulnerabilities?.critical ?? 0)")
+          HIGH=$(cat audit-result.json | node -e "const d=JSON.parse(require('fs').readFileSync('/dev/stdin','utf8')); console.log(d.metadata?.vulnerabilities?.high ?? 0)")
+          MODERATE=$(cat audit-result.json | node -e "const d=JSON.parse(require('fs').readFileSync('/dev/stdin','utf8')); console.log(d.metadata?.vulnerabilities?.moderate ?? 0)")
+          echo "| 深刻度 | 件数 |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔴 Critical | ${CRITICAL} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🟠 High     | ${HIGH} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🟡 Moderate | ${MODERATE} |" >> $GITHUB_STEP_SUMMARY
+          if [ "$HIGH" -gt 0 ] || [ "$CRITICAL" -gt 0 ]; then
+            echo "❌ High以上の脆弱性が検出されました" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          else
+            echo "✅ High以上の脆弱性なし" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Upload audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-frontend-report
+          path: frontend/audit-result.json
+          retention-days: 30
 
   security-backend:
     name: Security / Backend
@@ -34,7 +63,27 @@ jobs:
         run: |
           mvn org.owasp:dependency-check-maven:check \
             -DfailBuildOnCVSS=7 \
+            -Dformat=HTML \
+            -DoutputDirectory=target/dependency-check \
             --no-transfer-progress || true
+
+      - name: Write OWASP summary
+        if: always()
+        run: |
+          echo "## 🔒 Security / Backend (OWASP)" >> $GITHUB_STEP_SUMMARY
+          if [ -f backend/target/dependency-check/dependency-check-report.html ]; then
+            echo "✅ レポート生成完了 → Artifacts を確認してください" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ レポートが生成されませんでした" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Upload OWASP report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-backend-report
+          path: backend/target/dependency-check/
+          retention-days: 30
 
   # ──────────────────────────────────────────
   # ② 静的解析
@@ -45,11 +94,31 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: ./.github/actions/setup-frontend   # node install + generate:api
+      - uses: ./.github/actions/setup-frontend
 
       - name: ESLint
         working-directory: frontend
-        run: npm run lint
+        run: |
+          npm run lint 2>&1 | tee eslint-result.txt
+          EXIT_CODE=${PIPESTATUS[0]}
+          echo "## 🔍 Lint / Frontend (ESLint)" >> $GITHUB_STEP_SUMMARY
+          if [ $EXIT_CODE -eq 0 ]; then
+            echo "✅ ESLint エラーなし" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ ESLint エラーあり" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            head -50 eslint-result.txt >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            exit $EXIT_CODE
+          fi
+
+      - name: Upload ESLint report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lint-frontend-report
+          path: frontend/eslint-result.txt
+          retention-days: 30
 
   lint-backend:
     name: Lint / Backend
@@ -57,11 +126,33 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: ./.github/actions/setup-backend    # java + maven
+      - uses: ./.github/actions/setup-backend
 
       - name: Checkstyle
         working-directory: backend
-        run: mvn checkstyle:check --no-transfer-progress
+        run: |
+          mvn checkstyle:check --no-transfer-progress 2>&1 | tee checkstyle-result.txt
+          EXIT_CODE=${PIPESTATUS[0]}
+          echo "## 🔍 Lint / Backend (Checkstyle)" >> $GITHUB_STEP_SUMMARY
+          if [ $EXIT_CODE -eq 0 ]; then
+            echo "✅ Checkstyle エラーなし" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Checkstyle エラーあり" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            grep "\[ERROR\]" checkstyle-result.txt | head -30 >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            exit $EXIT_CODE
+          fi
+
+      - name: Upload Checkstyle report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lint-backend-report
+          path: |
+            backend/checkstyle-result.txt
+            backend/target/checkstyle-result.xml
+          retention-days: 30
 
   # ──────────────────────────────────────────
   # ③ テスト
@@ -72,11 +163,48 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: ./.github/actions/setup-frontend   # node install + generate:api
+      - uses: ./.github/actions/setup-frontend
 
-      - name: Run tests
+      - name: Run tests with coverage
         working-directory: frontend
-        run: npm run test --if-present
+        run: npm run test:coverage
+
+      - name: Write test summary
+        if: always()
+        working-directory: frontend
+        run: |
+          echo "## 🧪 Test / Frontend" >> $GITHUB_STEP_SUMMARY
+          if [ -f test-results/junit.xml ]; then
+            TESTS=$(grep -o 'tests="[0-9]*"' test-results/junit.xml | head -1 | grep -o '[0-9]*')
+            FAILURES=$(grep -o 'failures="[0-9]*"' test-results/junit.xml | head -1 | grep -o '[0-9]*')
+            ERRORS=$(grep -o 'errors="[0-9]*"' test-results/junit.xml | head -1 | grep -o '[0-9]*')
+            echo "| 項目 | 件数 |" >> $GITHUB_STEP_SUMMARY
+            echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+            echo "| ✅ テスト数 | ${TESTS:-0} |" >> $GITHUB_STEP_SUMMARY
+            echo "| ❌ 失敗    | ${FAILURES:-0} |" >> $GITHUB_STEP_SUMMARY
+            echo "| 💥 エラー  | ${ERRORS:-0} |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ テスト結果ファイルが見つかりません（テストが存在しない可能性があります）" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📊 カバレッジ" >> $GITHUB_STEP_SUMMARY
+          echo "詳細は Artifacts の \`test-frontend-coverage\` を確認してください" >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-frontend-results
+          path: frontend/test-results/
+          retention-days: 30
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-frontend-coverage
+          path: frontend/coverage/
+          retention-days: 30
 
   test-backend:
     name: Test / Backend
@@ -98,9 +226,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: ./.github/actions/setup-backend    # java + maven
+      - uses: ./.github/actions/setup-backend
 
-      - name: Run tests
+      - name: Run tests with coverage
         working-directory: backend
         env:
           DB_HOST: localhost
@@ -109,3 +237,41 @@ jobs:
           DB_USER: appuser
           DB_PASSWORD: apppassword
         run: mvn test --no-transfer-progress
+
+      - name: Write test summary
+        if: always()
+        working-directory: backend
+        run: |
+          echo "## 🧪 Test / Backend" >> $GITHUB_STEP_SUMMARY
+          REPORT_DIR="target/surefire-reports"
+          if ls ${REPORT_DIR}/*.xml 2>/dev/null | head -1 > /dev/null; then
+            TESTS=$(grep -h 'tests="' ${REPORT_DIR}/*.xml | grep -o 'tests="[0-9]*"' | grep -o '[0-9]*' | awk '{s+=$1} END {print s}')
+            FAILURES=$(grep -h 'failures="' ${REPORT_DIR}/*.xml | grep -o 'failures="[0-9]*"' | grep -o '[0-9]*' | awk '{s+=$1} END {print s}')
+            ERRORS=$(grep -h 'errors="' ${REPORT_DIR}/*.xml | grep -o 'errors="[0-9]*"' | grep -o '[0-9]*' | awk '{s+=$1} END {print s}')
+            echo "| 項目 | 件数 |" >> $GITHUB_STEP_SUMMARY
+            echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+            echo "| ✅ テスト数 | ${TESTS:-0} |" >> $GITHUB_STEP_SUMMARY
+            echo "| ❌ 失敗    | ${FAILURES:-0} |" >> $GITHUB_STEP_SUMMARY
+            echo "| 💥 エラー  | ${ERRORS:-0} |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ テスト結果ファイルが見つかりません（テストが存在しない可能性があります）" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📊 カバレッジ" >> $GITHUB_STEP_SUMMARY
+          echo "詳細は Artifacts の \`test-backend-coverage\` を確認してください" >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-backend-results
+          path: backend/target/surefire-reports/
+          retention-days: 30
+
+      - name: Upload coverage report (JaCoCo)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-backend-coverage
+          path: backend/target/site/jacoco/
+          retention-days: 30
