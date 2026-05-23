@@ -35,6 +35,7 @@ migrate:
 ## 依存インストール + 全生成 + マイグレーション
 setup:
 	@echo "🚀 初回セットアップ開始..."
+	npm install
 	cd frontend && npm install
 	$(MAKE) migrate
 	$(MAKE) generate

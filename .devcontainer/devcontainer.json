@@ -37,6 +37,6 @@
     }
   },
   "forwardPorts": [5173, 8080, 5432],
-  "postCreateCommand": "cd /workspace/frontend && npm install && cd /workspace/backend && mvn dependency:resolve -q && echo '✅ Setup complete!'",
+  "postCreateCommand": "cd /workspace && npm install && cd /workspace/frontend && npm install && cd /workspace/backend && mvn dependency:resolve -q && echo '✅ Setup complete!'",
   "remoteUser": "root"
 }
