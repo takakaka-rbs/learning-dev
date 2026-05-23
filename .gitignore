@@ -4,9 +4,13 @@ backend/src/main/java/com/example/app/jooq/
 backend/src/main/java/com/example/app/generated/
 backend/target/
 
+# フロントビルド成果物
+frontend/dist/
+
 # Node
 frontend/node_modules/
 frontend/dist/
+node_modules/
 
 # IDE
 .idea/

@@ -22,26 +22,26 @@ import java.util.List;
 @RequiredArgsConstructor
 public class UserController implements UsersApi {
 
-    private final UserService userService;
+  private final UserService userService;
 
-    /**
-     * GET /users - ユーザー一覧取得
-     * openapi.yml の operationId: getUsers に対応
-     */
-    @Override
-    public ResponseEntity<List<User>> getUsers() {
-        List<User> users = userService.findAll();
-        return ResponseEntity.ok(users);
-    }
+  /**
+   * GET /users - ユーザー一覧取得
+   * openapi.yml の operationId: getUsers に対応
+   */
+  @Override
+  public ResponseEntity<List<User>> getUsers() {
+    List<User> users = userService.findAll();
+    return ResponseEntity.ok(users);
+  }
 
-    /**
-     * GET /users/{id} - ユーザー取得
-     * openapi.yml の operationId: getUserById に対応
-     */
-    @Override
-    public ResponseEntity<User> getUserById(Long id) {
-        return userService.findById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
-    }
+  /**
+   * GET /users/{id} - ユーザー取得
+   * openapi.yml の operationId: getUserById に対応
+   */
+  @Override
+  public ResponseEntity<User> getUserById(Long id) {
+    return userService.findById(id)
+        .map(ResponseEntity::ok)
+        .orElse(ResponseEntity.notFound().build());
+  }
 }

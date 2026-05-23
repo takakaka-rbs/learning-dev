@@ -7,7 +7,9 @@ import { RouterView } from 'vue-router'
     <header class="app-header">
       <span class="logo">⚡ AppName</span>
       <nav>
-        <RouterLink to="/users">ユーザー一覧</RouterLink>
+        <RouterLink to="/users">
+          ユーザー一覧
+        </RouterLink>
       </nav>
     </header>
     <main>

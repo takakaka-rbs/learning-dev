@@ -2,6 +2,7 @@
   "name": "frontend",
   "version": "0.0.1",
   "private": false,
+  "type": "module",
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"
   },
@@ -9,7 +10,7 @@
     "dev": "vite",
     "build": "vue-tsc && vite build",
     "preview": "vite preview",
-    "lint": "eslint . --ext .vue,.ts --fix",
+    "lint": "eslint . --fix",
     "format": "prettier --write src/",
     "generate:api": "openapi-ts --input ../openapi/openapi.yml --output src/api/generated --client fetch"
   },
@@ -27,6 +28,8 @@
     "vue-tsc": "^2.0.0",
     "@hey-api/openapi-ts": "^0.52.0",
     "eslint": "^9.0.0",
+    "eslint-plugin-vue": "^9.0.0",
+    "typescript-eslint": "^8.0.0",
     "prettier": "^3.0.0"
   }
 }
