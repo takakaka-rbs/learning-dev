@@ -28,10 +28,29 @@
       ],
       "settings": {
         "java.configuration.updateBuildConfiguration": "automatic",
+
+        // デフォルトフォーマッター（Vue・TS・JS は Prettier）
         "editor.formatOnSave": true,
         "editor.defaultFormatter": "esbenp.prettier-vscode",
+
+        // TypeScript・Vue は ESLint の自動修正も保存時に実行
+        "[typescript]": {
+          "editor.codeActionsOnSave": {
+            "source.fixAll.eslint": "explicit"
+          }
+        },
+        "[vue]": {
+          "editor.codeActionsOnSave": {
+            "source.fixAll.eslint": "explicit"
+          }
+        },
+
+        // Java は redhat.java が Google スタイルで保存時自動整形
+        // google-java-format と同じ Google Java Style Guide に準拠
         "[java]": {
-          "editor.defaultFormatter": "redhat.java"
+          "editor.defaultFormatter": "redhat.java",
+          "editor.formatOnSave": true,
+          "java.format.settings.url": "https://raw.githubusercontent.com/google/styleguide/gh-pages/eclipse-java-google-style.xml"
         }
       }
     }

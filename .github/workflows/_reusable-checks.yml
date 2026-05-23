@@ -1,0 +1,278 @@
+name: Reusable Checks
+
+on:
+  workflow_call:
+    inputs:
+      fail-on-audit:
+        description: "High/Critical の脆弱性でCIを失敗させるか（release では true、開発PRでは false）"
+        required: false
+        type: boolean
+        default: true
+
+jobs:
+  # ──────────────────────────────────────────
+  # ① セキュリティチェック
+  # ──────────────────────────────────────────
+  npm-audit:
+    name: npm audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # npm audit は package-lock.json を読むだけなので npm ci 不要
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Audit dependencies
+        working-directory: frontend
+        run: npm audit --audit-level=high --json > audit-result.json || true
+
+      - name: Write audit summary
+        if: always()
+        working-directory: frontend
+        run: |
+          echo "## 🔒 npm audit" >> $GITHUB_STEP_SUMMARY
+          if [ ! -f audit-result.json ]; then
+            echo "⚠️ audit-result.json が生成されませんでした" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+          CRITICAL=$(node -e "const d=JSON.parse(require('fs').readFileSync('audit-result.json','utf8')); console.log(d.metadata?.vulnerabilities?.critical ?? 0)" 2>/dev/null || echo 0)
+          HIGH=$(node -e "const d=JSON.parse(require('fs').readFileSync('audit-result.json','utf8')); console.log(d.metadata?.vulnerabilities?.high ?? 0)" 2>/dev/null || echo 0)
+          MODERATE=$(node -e "const d=JSON.parse(require('fs').readFileSync('audit-result.json','utf8')); console.log(d.metadata?.vulnerabilities?.moderate ?? 0)" 2>/dev/null || echo 0)
+          echo "| 深刻度 | 件数 |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔴 Critical | ${CRITICAL:-0} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🟠 High     | ${HIGH:-0} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🟡 Moderate | ${MODERATE:-0} |" >> $GITHUB_STEP_SUMMARY
+          if [ "${HIGH:-0}" -gt 0 ] || [ "${CRITICAL:-0}" -gt 0 ]; then
+            if [ "${{ inputs.fail-on-audit }}" = "true" ]; then
+              echo "❌ High以上の脆弱性が検出されました（リリースをブロック）" >> $GITHUB_STEP_SUMMARY
+              exit 1
+            else
+              echo "⚠️ High以上の脆弱性が検出されました（開発中は警告のみ）" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "✅ High以上の脆弱性なし" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Upload audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-frontend-report
+          path: frontend/audit-result.json
+          retention-days: 30
+
+  owasp-check:
+    name: OWASP Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Skip (NVD API Key not configured)
+        run: |
+          echo "## 🔒 OWASP Dependency Check" >> $GITHUB_STEP_SUMMARY
+          echo "⏭️ \`NVD_API_KEY\` Secret が未設定のためスキップします。" >> $GITHUB_STEP_SUMMARY
+          echo "有効化するには Repository Settings → Secrets に \`NVD_API_KEY\` を追加してください。" >> $GITHUB_STEP_SUMMARY
+
+  # ──────────────────────────────────────────
+  # ② 静的解析
+  # ──────────────────────────────────────────
+  eslint:
+    name: ESLint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-frontend
+
+      - name: ESLint
+        working-directory: frontend
+        run: |
+          npm run lint 2>&1 | tee eslint-result.txt
+          EXIT_CODE=${PIPESTATUS[0]}
+          echo "## 🔍 ESLint" >> $GITHUB_STEP_SUMMARY
+          if [ $EXIT_CODE -eq 0 ]; then
+            echo "✅ ESLint エラーなし" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ ESLint エラーあり" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            head -50 eslint-result.txt >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            exit $EXIT_CODE
+          fi
+
+      - name: Upload ESLint report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lint-frontend-report
+          path: frontend/eslint-result.txt
+          retention-days: 30
+
+  checkstyle:
+    name: Checkstyle
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-backend
+
+      - name: Checkstyle
+        working-directory: backend
+        run: |
+          mvn checkstyle:check --no-transfer-progress 2>&1 | tee checkstyle-result.txt
+          EXIT_CODE=${PIPESTATUS[0]}
+          echo "## 🔍 Checkstyle" >> $GITHUB_STEP_SUMMARY
+          if [ $EXIT_CODE -eq 0 ]; then
+            echo "✅ Checkstyle エラーなし" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Checkstyle エラーあり" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            grep "\[ERROR\]" checkstyle-result.txt | head -30 >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            exit $EXIT_CODE
+          fi
+
+      - name: Upload Checkstyle report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lint-backend-report
+          path: |
+            backend/checkstyle-result.txt
+            backend/target/checkstyle-result.xml
+          retention-days: 30
+
+  # ──────────────────────────────────────────
+  # ③ テスト
+  # ──────────────────────────────────────────
+  jest:
+    name: Jest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-frontend
+
+      - name: Run tests with coverage
+        working-directory: frontend
+        run: npm run test:coverage
+
+      - name: Write test summary
+        if: always()
+        working-directory: frontend
+        run: |
+          echo "## 🧪 Jest" >> $GITHUB_STEP_SUMMARY
+          if [ -f test-results/junit.xml ] && grep -q 'tests=' test-results/junit.xml; then
+            TESTS=$(grep -o 'tests="[0-9]*"' test-results/junit.xml | head -1 | grep -o '[0-9]*')
+            FAILURES=$(grep -o 'failures="[0-9]*"' test-results/junit.xml | head -1 | grep -o '[0-9]*')
+            ERRORS=$(grep -o 'errors="[0-9]*"' test-results/junit.xml | head -1 | grep -o '[0-9]*')
+            echo "| 項目 | 件数 |" >> $GITHUB_STEP_SUMMARY
+            echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+            echo "| テスト数 | ${TESTS:-0} |" >> $GITHUB_STEP_SUMMARY
+            echo "| 失敗 | ${FAILURES:-0} |" >> $GITHUB_STEP_SUMMARY
+            echo "| エラー | ${ERRORS:-0} |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "テストファイルなし（スキップ）" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### カバレッジ" >> $GITHUB_STEP_SUMMARY
+          echo "詳細は Artifacts の test-frontend-coverage を確認してください" >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-frontend-results
+          path: frontend/test-results/
+          retention-days: 30
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-frontend-coverage
+          path: frontend/coverage/
+          retention-days: 30
+
+  junit:
+    name: JUnit
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: appdb
+          POSTGRES_USER: appuser
+          POSTGRES_PASSWORD: apppassword
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-backend
+
+      # jooq/generated は .gitignore 対象のため CI では毎回生成する
+      # flyway:migrate でスキーマを作成してから jooq-codegen:generate を実行
+      - name: Generate jOOQ sources
+        working-directory: backend
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: appdb
+          DB_USER: appuser
+          DB_PASSWORD: apppassword
+        run: mvn flyway:migrate jooq-codegen:generate --no-transfer-progress
+
+      - name: Run tests with coverage
+        working-directory: backend
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: appdb
+          DB_USER: appuser
+          DB_PASSWORD: apppassword
+        run: mvn test --no-transfer-progress
+
+      - name: Write test summary
+        if: always()
+        working-directory: backend
+        run: |
+          echo "## 🧪 JUnit" >> $GITHUB_STEP_SUMMARY
+          REPORT_DIR="target/surefire-reports"
+          if ls ${REPORT_DIR}/*.xml 2>/dev/null | head -1 > /dev/null; then
+            TESTS=$(grep -h 'tests="' ${REPORT_DIR}/*.xml | grep -o 'tests="[0-9]*"' | grep -o '[0-9]*' | awk '{s+=$1} END {print s}')
+            FAILURES=$(grep -h 'failures="' ${REPORT_DIR}/*.xml | grep -o 'failures="[0-9]*"' | grep -o '[0-9]*' | awk '{s+=$1} END {print s}')
+            ERRORS=$(grep -h 'errors="' ${REPORT_DIR}/*.xml | grep -o 'errors="[0-9]*"' | grep -o '[0-9]*' | awk '{s+=$1} END {print s}')
+            echo "| 項目 | 件数 |" >> $GITHUB_STEP_SUMMARY
+            echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+            echo "| ✅ テスト数 | ${TESTS:-0} |" >> $GITHUB_STEP_SUMMARY
+            echo "| ❌ 失敗    | ${FAILURES:-0} |" >> $GITHUB_STEP_SUMMARY
+            echo "| 💥 エラー  | ${ERRORS:-0} |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ テスト結果ファイルが見つかりません（テストが存在しない可能性があります）" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📊 カバレッジ" >> $GITHUB_STEP_SUMMARY
+          echo "詳細は Artifacts の \`test-backend-coverage\` を確認してください" >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-backend-results
+          path: backend/target/surefire-reports/
+          retention-days: 30
+
+      - name: Upload coverage report (JaCoCo)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-backend-coverage
+          path: backend/target/site/jacoco/
+          retention-days: 30

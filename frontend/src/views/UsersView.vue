@@ -33,10 +33,23 @@ onMounted(async () => {
   <div class="users-view">
     <h1>ユーザー一覧</h1>
 
-    <p v-if="loading" class="status">読み込み中...</p>
-    <p v-else-if="error" class="status error">{{ error }}</p>
+    <p
+      v-if="loading"
+      class="status"
+    >
+      読み込み中...
+    </p>
+    <p
+      v-else-if="error"
+      class="status error"
+    >
+      {{ error }}
+    </p>
 
-    <table v-else class="users-table">
+    <table
+      v-else
+      class="users-table"
+    >
       <thead>
         <tr>
           <th>ID</th>
@@ -46,7 +59,10 @@ onMounted(async () => {
         </tr>
       </thead>
       <tbody>
-        <tr v-for="user in users" :key="user.id">
+        <tr
+          v-for="user in users"
+          :key="user.id"
+        >
           <td>{{ user.id }}</td>
           <td>{{ user.name }}</td>
           <td>{{ user.email }}</td>
@@ -61,7 +77,10 @@ onMounted(async () => {
       </tbody>
     </table>
 
-    <p v-if="!loading && !error && users.length === 0" class="status">
+    <p
+      v-if="!loading && !error && users.length === 0"
+      class="status"
+    >
       ユーザーが見つかりませんでした。
     </p>
   </div>
