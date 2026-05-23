@@ -7,10 +7,15 @@ WORKDIR /app
 COPY frontend/package.json frontend/package-lock.json* ./
 RUN npm ci
 
-# openapi.yml をコピーしてAPIクライアント生成
+# openapi.yml をコピー
 COPY openapi ./openapi
+
+# ソースをコピー
 COPY frontend/ .
-RUN npm run generate:api && npm run build
+
+# openapi.yml のパスを Docker 環境用に上書きして生成 → ビルド
+# ローカルは ../openapi だが Docker では ./openapi にコピーしているため
+RUN npx @hey-api/openapi-ts --input ./openapi/openapi.yml --output src/api/generated && npm run build
 
 # ── ② 本番ステージ ──────────────────────────────
 FROM nginx:alpine AS runner
