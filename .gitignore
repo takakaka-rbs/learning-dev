@@ -23,3 +23,7 @@ Thumbs.db
 # Env
 .env
 .env.local
+
+# Claude Code（個人設定・ローカル作業データはコミットしない。settings.json は共有設定なのでコミットする）
+.claude/settings.local.json
+.claude/plugin-feedback/
