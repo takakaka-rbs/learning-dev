@@ -1,8 +1,4 @@
 {
-  "permissions": {
-    "defaultMode": "bypassPermissions"
-  },
-  "enableAllProjectMcpServers": true,
   "enabledPlugins": {
     "orchestrator@takaka-agent-plugins": true,
     "openapi-specificater@takaka-agent-plugins": true,
@@ -11,13 +7,5 @@
     "github-issue-creator@takaka-agent-plugins": true,
     "git-commit-pusher@takaka-agent-plugins": true,
     "plugin-improver@takaka-agent-plugins": true
-  },
-  "extraKnownMarketplaces": {
-    "takaka-agent-plugins": {
-      "source": {
-        "source": "github",
-        "repo": "takakaka-rbs/takaka-agent-plugins"
-      }
-    }
   }
 }

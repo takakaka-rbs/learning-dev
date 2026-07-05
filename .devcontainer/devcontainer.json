@@ -5,7 +5,7 @@
   "workspaceFolder": "/workspace",
   "features": {
     "ghcr.io/devcontainers/features/node:1": {
-      "version": "20"
+      "version": "22"
     },
     "ghcr.io/devcontainers/features/java:1": {
       "version": "21",
@@ -56,6 +56,6 @@
     }
   },
   "forwardPorts": [5173, 8080, 5432],
-  "postCreateCommand": "cd /workspace && npm install && cd /workspace/frontend && npm install && cd /workspace/backend && mvn dependency:resolve -q && echo '✅ Setup complete!'",
+  "postCreateCommand": "cd /workspace && npm install && cd /workspace/frontend && npm install && cd /workspace/backend && mvn dependency:resolve -q && npm install -g @anthropic-ai/claude-code@latest && claude plugin marketplace add takakaka-rbs/takaka-agent-plugins && for p in orchestrator openapi-specificater requirements-specificater screen-specificater github-issue-creator git-commit-pusher plugin-improver; do claude plugin install \"$p@takaka-agent-plugins\" --scope project; done && echo '✅ Setup complete!'",
   "remoteUser": "root"
 }
