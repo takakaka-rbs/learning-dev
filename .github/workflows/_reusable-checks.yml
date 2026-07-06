@@ -348,3 +348,56 @@ jobs:
           name: test-api-results
           path: backend/target/failsafe-reports/
           retention-days: 30
+
+  vrt:
+    name: VRT (Storybook)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-frontend
+
+      - name: Install Playwright browsers
+        working-directory: frontend
+        run: npx playwright install --with-deps chromium
+
+      - name: Build Storybook
+        working-directory: frontend
+        run: npm run build-storybook
+
+      # ベースライン（tests/vrt/__screenshots__/ 配下の -linux スナップショット）と比較する。
+      # 未生成のベースラインは --update-snapshots=missing で失敗にせず生成し、
+      # Artifacts からダウンロードしてコミットすることで以降の比較対象になる
+      - name: Run VRT
+        working-directory: frontend
+        run: npx playwright test -c playwright.vrt.config.ts --update-snapshots=missing
+
+      - name: Write VRT summary
+        if: always()
+        working-directory: frontend
+        run: |
+          echo "## 📸 VRT (Storybook)" >> $GITHUB_STEP_SUMMARY
+          if [ -d tests/vrt/__screenshots__ ]; then
+            COUNT=$(find tests/vrt/__screenshots__ -name '*-linux.png' | wc -l)
+            echo "Linux ベースライン: ${COUNT} 枚" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "差分・新規スクリーンショットは Artifacts の vrt-report / vrt-snapshots を確認してください" >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload VRT report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vrt-report
+          path: |
+            frontend/playwright-report/vrt/
+            frontend/test-results/vrt/
+          retention-days: 30
+
+      # 初回実行時のベースライン取り込み用（tests/vrt/__screenshots__ をそのままコミットできる形で保存）
+      - name: Upload VRT snapshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vrt-snapshots
+          path: frontend/tests/vrt/__screenshots__/
+          retention-days: 30
