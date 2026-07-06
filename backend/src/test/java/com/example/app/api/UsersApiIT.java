@@ -30,7 +30,7 @@ class UsersApiIT {
   @Test
   @DisplayName("GET /users - 200: ユーザー一覧が User スキーマ（必須: id, name, email）で返る")
   void getUsersReturnsUserList() {
-    ResponseEntity<User[]> response = restTemplate.getForEntity("/api/users", User[].class);
+    ResponseEntity<User[]> response = restTemplate.getForEntity("/users", User[].class);
 
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     assertThat(response.getBody()).isNotNull();
@@ -47,7 +47,7 @@ class UsersApiIT {
   @Test
   @DisplayName("GET /users/{id} - 200: 指定IDのユーザーが User スキーマで返る")
   void getUserByIdReturnsUser() {
-    ResponseEntity<User> response = restTemplate.getForEntity("/api/users/1", User.class);
+    ResponseEntity<User> response = restTemplate.getForEntity("/users/1", User.class);
 
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     assertThat(response.getBody()).isNotNull();
@@ -60,7 +60,7 @@ class UsersApiIT {
   @DisplayName("GET /users/{id} - 404: 存在しないIDは Not Found が返る")
   void getUserByIdReturnsNotFoundForUnknownId() {
     ResponseEntity<String> response =
-        restTemplate.getForEntity("/api/users/999999", String.class);
+        restTemplate.getForEntity("/users/999999", String.class);
 
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
     // NOTE: openapi.yml では 404 のボディに ErrorResponse を定義しているが、
