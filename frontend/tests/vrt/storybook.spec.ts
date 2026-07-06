@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
+import { resolve } from "node:path";
 import { test, expect } from "@playwright/test";
 
 /**
@@ -17,9 +17,8 @@ interface StoryIndexEntry {
   type: string;
 }
 
-const indexJsonPath = fileURLToPath(
-  new URL("../../storybook-static/index.json", import.meta.url),
-);
+// Playwright の実行ディレクトリ（frontend/）基準で storybook build の出力を参照する
+const indexJsonPath = resolve(process.cwd(), "storybook-static/index.json");
 
 const storyIndex = JSON.parse(readFileSync(indexJsonPath, "utf-8")) as {
   entries: Record<string, StoryIndexEntry>;
