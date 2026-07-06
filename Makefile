@@ -1,7 +1,7 @@
 .PHONY: generate generate-front generate-back setup \
         dev-front dev-back dev stop \
         lint lint-front lint-back \
-        test test-front test-back \
+        test test-front test-back test-api \
         check check-front check-back check-all \
         migrate build help
 
@@ -70,6 +70,11 @@ test-front:
 test-back:
 	@echo "⚡ [Back] テスト実行中..."
 	cd backend && mvn test --no-transfer-progress
+
+## APIテスト (Spring Boot Test + failsafe。openapi.yml を根拠に検証。DB起動が必要)
+test-api:
+	@echo "⚡ [Back] APIテスト実行中..."
+	cd backend && mvn verify -Dsurefire.skip=true -Djacoco.skip=true --no-transfer-progress
 
 # ─────────────────────────────────────────
 # 静的解析 + テスト まとめて実行
@@ -165,6 +170,7 @@ help:
 	@echo "  make test           フロント + バック テスト"
 	@echo "  make test-front     フロントのみテスト"
 	@echo "  make test-back      バックのみテスト"
+	@echo "  make test-api       APIテスト（openapi.yml 準拠検証。DB起動が必要）"
 	@echo ""
 	@echo "  make check          フロント + バック 静的解析 & テスト"
 	@echo "  make check-front    フロントのみ 静的解析 & テスト"

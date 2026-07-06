@@ -276,3 +276,75 @@ jobs:
           name: test-backend-coverage
           path: backend/target/site/jacoco/
           retention-days: 30
+
+  api-test:
+    name: API Test (OpenAPI)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: appdb
+          POSTGRES_USER: appuser
+          POSTGRES_PASSWORD: apppassword
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-backend
+
+      # jooq/generated は .gitignore 対象のため CI では毎回生成する
+      - name: Generate jOOQ sources
+        working-directory: backend
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: appdb
+          DB_USER: appuser
+          DB_PASSWORD: apppassword
+        run: mvn flyway:migrate jooq-codegen:generate --no-transfer-progress
+
+      # openapi.yml を根拠にした APIテスト（*IT.java / failsafe）。
+      # 単体テストは junit ジョブが担うため surefire と jacoco はスキップする
+      - name: Run API tests (failsafe)
+        working-directory: backend
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: appdb
+          DB_USER: appuser
+          DB_PASSWORD: apppassword
+        run: mvn verify -Dsurefire.skip=true -Djacoco.skip=true --no-transfer-progress
+
+      - name: Write test summary
+        if: always()
+        working-directory: backend
+        run: |
+          echo "## 🧪 API Test (OpenAPI)" >> $GITHUB_STEP_SUMMARY
+          REPORT_DIR="target/failsafe-reports"
+          if ls ${REPORT_DIR}/*.xml 2>/dev/null | head -1 > /dev/null; then
+            TESTS=$(grep -h 'tests="' ${REPORT_DIR}/*.xml | grep -o 'tests="[0-9]*"' | grep -o '[0-9]*' | awk '{s+=$1} END {print s}')
+            FAILURES=$(grep -h 'failures="' ${REPORT_DIR}/*.xml | grep -o 'failures="[0-9]*"' | grep -o '[0-9]*' | awk '{s+=$1} END {print s}')
+            ERRORS=$(grep -h 'errors="' ${REPORT_DIR}/*.xml | grep -o 'errors="[0-9]*"' | grep -o '[0-9]*' | awk '{s+=$1} END {print s}')
+            echo "| 項目 | 件数 |" >> $GITHUB_STEP_SUMMARY
+            echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+            echo "| ✅ テスト数 | ${TESTS:-0} |" >> $GITHUB_STEP_SUMMARY
+            echo "| ❌ 失敗    | ${FAILURES:-0} |" >> $GITHUB_STEP_SUMMARY
+            echo "| 💥 エラー  | ${ERRORS:-0} |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ テスト結果ファイルが見つかりません（APIテストが存在しない可能性があります）" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Upload API test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-api-results
+          path: backend/target/failsafe-reports/
+          retention-days: 30
