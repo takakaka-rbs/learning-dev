@@ -30,7 +30,7 @@
     <java.version>21</java.version>
     <openapi-generator.version>7.6.0</openapi-generator.version>
     <jooq.version>3.19.10</jooq.version>
-    <flyway.version>10.15.0</flyway.version>
+    <flyway.version>12.6.2</flyway.version>
 
     <!-- DB接続設定: 環境変数があればそちらを優先、なければデフォルト値を使用 -->
     <!-- Maven は ${env.VAR:default} の書き方をサポートしないため、ここで定義する -->
