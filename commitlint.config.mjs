@@ -1,4 +1,7 @@
-// commitlint.config.js
+// commitlint.config.mjs
+//
+// ESM 記法（export default）のため拡張子は .mjs にしている。
+// （package.json が "type": "module" ではないため .js だと読み込みに失敗する）
 //
 // conventional commits のルールを定義する。
 // "type(scope): subject" の形式を強制する。
