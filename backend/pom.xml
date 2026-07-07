@@ -313,6 +313,28 @@
           <reportsDirectory>${project.build.directory}/surefire-reports</reportsDirectory>
         </configuration>
       </plugin>
+
+      <!--
+        Failsafe: APIテスト（*IT.java）を単体テスト（surefire）と分離して実行する。
+        openapi.yml を根拠に、OpenAPI Generator の生成モデルでレスポンスを検証する。
+        実行には PostgreSQL が必要（devcontainer / docker compose / CI の postgres サービス）。
+        実行コマンド: mvn verify（APIテストのみ: mvn verify -Dsurefire.skip=true）
+      -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <configuration>
+          <reportsDirectory>${project.build.directory}/failsafe-reports</reportsDirectory>
+        </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <goal>integration-test</goal>
+              <goal>verify</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
   </build>
 </project>

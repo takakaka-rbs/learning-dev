@@ -276,3 +276,188 @@ jobs:
           name: test-backend-coverage
           path: backend/target/site/jacoco/
           retention-days: 30
+
+  api-test:
+    name: API Test (OpenAPI)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: appdb
+          POSTGRES_USER: appuser
+          POSTGRES_PASSWORD: apppassword
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-backend
+
+      # jooq/generated は .gitignore 対象のため CI では毎回生成する
+      - name: Generate jOOQ sources
+        working-directory: backend
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: appdb
+          DB_USER: appuser
+          DB_PASSWORD: apppassword
+        run: mvn flyway:migrate jooq-codegen:generate --no-transfer-progress
+
+      # openapi.yml を根拠にした APIテスト（*IT.java / failsafe）。
+      # 単体テストは junit ジョブが担うため surefire と jacoco はスキップする
+      - name: Run API tests (failsafe)
+        working-directory: backend
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: appdb
+          DB_USER: appuser
+          DB_PASSWORD: apppassword
+        run: mvn verify -Dsurefire.skip=true -Djacoco.skip=true --no-transfer-progress
+
+      - name: Write test summary
+        if: always()
+        working-directory: backend
+        run: |
+          echo "## 🧪 API Test (OpenAPI)" >> $GITHUB_STEP_SUMMARY
+          REPORT_DIR="target/failsafe-reports"
+          if ls ${REPORT_DIR}/*.xml 2>/dev/null | head -1 > /dev/null; then
+            TESTS=$(grep -h 'tests="' ${REPORT_DIR}/*.xml | grep -o 'tests="[0-9]*"' | grep -o '[0-9]*' | awk '{s+=$1} END {print s}')
+            FAILURES=$(grep -h 'failures="' ${REPORT_DIR}/*.xml | grep -o 'failures="[0-9]*"' | grep -o '[0-9]*' | awk '{s+=$1} END {print s}')
+            ERRORS=$(grep -h 'errors="' ${REPORT_DIR}/*.xml | grep -o 'errors="[0-9]*"' | grep -o '[0-9]*' | awk '{s+=$1} END {print s}')
+            echo "| 項目 | 件数 |" >> $GITHUB_STEP_SUMMARY
+            echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+            echo "| ✅ テスト数 | ${TESTS:-0} |" >> $GITHUB_STEP_SUMMARY
+            echo "| ❌ 失敗    | ${FAILURES:-0} |" >> $GITHUB_STEP_SUMMARY
+            echo "| 💥 エラー  | ${ERRORS:-0} |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ テスト結果ファイルが見つかりません（APIテストが存在しない可能性があります）" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Upload API test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-api-results
+          path: backend/target/failsafe-reports/
+          retention-days: 30
+
+  vrt:
+    name: VRT (Storybook)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-frontend
+
+      - name: Install Playwright browsers
+        working-directory: frontend
+        run: npx playwright install --with-deps chromium
+
+      - name: Build Storybook
+        working-directory: frontend
+        run: npm run build-storybook
+
+      # ベースライン（tests/vrt/__screenshots__/ 配下の -linux スナップショット）と比較する。
+      # 未生成のベースラインは --update-snapshots=missing で失敗にせず生成し、
+      # Artifacts からダウンロードしてコミットすることで以降の比較対象になる
+      - name: Run VRT
+        working-directory: frontend
+        run: npx playwright test -c playwright.vrt.config.ts --update-snapshots=missing
+
+      - name: Write VRT summary
+        if: always()
+        working-directory: frontend
+        run: |
+          echo "## 📸 VRT (Storybook)" >> $GITHUB_STEP_SUMMARY
+          if [ -d tests/vrt/__screenshots__ ]; then
+            COUNT=$(find tests/vrt/__screenshots__ -name '*-linux.png' | wc -l)
+            echo "Linux ベースライン: ${COUNT} 枚" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "差分・新規スクリーンショットは Artifacts の vrt-report / vrt-snapshots を確認してください" >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload VRT report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vrt-report
+          path: |
+            frontend/playwright-report/vrt/
+            frontend/test-results/vrt/
+          retention-days: 30
+
+      # 初回実行時のベースライン取り込み用（tests/vrt/__screenshots__ をそのままコミットできる形で保存）
+      - name: Upload VRT snapshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vrt-snapshots
+          path: frontend/tests/vrt/__screenshots__/
+          retention-days: 30
+
+  e2e:
+    name: E2E (Playwright)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: appdb
+          POSTGRES_USER: appuser
+          POSTGRES_PASSWORD: apppassword
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DB_HOST: localhost
+      DB_PORT: 5432
+      DB_NAME: appdb
+      DB_USER: appuser
+      DB_PASSWORD: apppassword
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-backend
+
+      - uses: ./.github/actions/setup-frontend
+
+      # jooq/generated は .gitignore 対象のため CI では毎回生成する
+      - name: Generate jOOQ sources
+        working-directory: backend
+        run: mvn flyway:migrate jooq-codegen:generate --no-transfer-progress
+
+      - name: Install Playwright browsers
+        working-directory: frontend
+        run: npx playwright install --with-deps chromium
+
+      # フロント（Vite）・バック（Spring Boot）は playwright.e2e.config.ts の webServer が起動する
+      - name: Run E2E tests
+        working-directory: frontend
+        run: npx playwright test -c playwright.e2e.config.ts
+
+      - name: Write E2E summary
+        if: always()
+        run: |
+          echo "## 🎭 E2E (Playwright)" >> $GITHUB_STEP_SUMMARY
+          echo "実行結果・スクリーンショットは Artifacts の e2e-report を確認してください" >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload E2E report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-report
+          path: |
+            frontend/playwright-report/e2e/
+            frontend/test-results/e2e/
+          retention-days: 30

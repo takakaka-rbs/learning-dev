@@ -6,10 +6,10 @@ backend/.openapi-generator
 frontend/dist/
 frontend/coverage
 
-# テスト成果物（Playwright・Storybook）
+# テスト成果物（Storybook / Playwright）
+frontend/storybook-static/
 frontend/playwright-report/
 frontend/test-results/
-frontend/storybook-static/
 
 # Node
 frontend/node_modules/
