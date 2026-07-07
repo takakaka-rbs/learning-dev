@@ -1,0 +1,27 @@
+# Docker ビルド context（リポジトリルート）から除外するもの
+# ・context の転送を軽くする
+# ・ホスト側の node_modules / ビルド成果物がイメージ内を上書きするのを防ぐ
+
+.git
+.github
+.devcontainer
+.claude
+.husky
+.idea
+.vscode
+
+# 依存関係（イメージ内で npm ci / mvn で解決する）
+node_modules
+frontend/node_modules
+
+# ビルド成果物・テスト出力
+backend/target
+frontend/dist
+frontend/coverage
+frontend/playwright-report
+frontend/test-results
+frontend/storybook-static
+
+# 環境ファイル
+.env
+.env.local

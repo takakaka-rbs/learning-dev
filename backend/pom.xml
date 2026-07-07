@@ -173,6 +173,8 @@
               <apiPackage>com.example.app.generated.api</apiPackage>
               <modelPackage>com.example.app.generated.model</modelPackage>
               <configOptions>
+                <!-- 生成日時を出力しない（ビルドのたびに @Generated の date が変わり不要な差分になるため） -->
+                <hideGenerationTimestamp>true</hideGenerationTimestamp>
                 <delegatePattern>false</delegatePattern>
                 <interfaceOnly>true</interfaceOnly>
                 <useSpringBoot3>true</useSpringBoot3>

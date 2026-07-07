@@ -1,5 +1,6 @@
 .PHONY: generate generate-front generate-back setup \
         dev-front dev-back dev stop \
+        up down logs \
         lint lint-front lint-back \
         test test-front test-back \
         check check-front check-back check-all \
@@ -133,6 +134,23 @@ stop:
 	@echo "✅ 停止完了"
 
 # ─────────────────────────────────────────
+# Docker Compose（フロント・バック・DB を全部コンテナで起動）
+# ─────────────────────────────────────────
+
+## 全サービスをビルドして起動（front: http://localhost:5173 / back: http://localhost:8080/api）
+up:
+	docker compose up -d --build
+	@echo "✅ 起動完了: フロント http://localhost:5173 / バック http://localhost:8080/api"
+
+## 全サービス停止・コンテナ削除
+down:
+	docker compose down
+
+## 全サービスのログを表示
+logs:
+	docker compose logs -f
+
+# ─────────────────────────────────────────
 # ビルド
 # ─────────────────────────────────────────
 
@@ -174,6 +192,10 @@ help:
 	@echo "  make dev-front      フロント開発サーバー起動"
 	@echo "  make dev-back       バック開発サーバー起動"
 	@echo "  make stop           全サービス停止"
+	@echo ""
+	@echo "  make up             Docker Compose で全サービス起動（フロント・バック・DB）"
+	@echo "  make down           Docker Compose の全サービス停止・削除"
+	@echo "  make logs           Docker Compose のログ表示"
 	@echo ""
 	@echo "  make build          ビルド（生成 → フロント・バック）"
 	@echo ""
