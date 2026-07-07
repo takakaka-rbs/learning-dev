@@ -129,8 +129,8 @@ dev:
 ## 全サービス停止
 stop:
 	@echo "🛑 停止中..."
-	@pkill -f "spring-boot" || true
-	@pkill -f "vite" || true
+	@fuser -k 8080/tcp 2>/dev/null || true
+	@fuser -k 5173/tcp 2>/dev/null || true
 	@echo "✅ 停止完了"
 
 # ─────────────────────────────────────────
