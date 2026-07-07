@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "defaultMode": "bypassPermissions"
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledPlugins": {
+    "orchestrator@takaka-agent-plugins": true,
+    "openapi-specificater@takaka-agent-plugins": true,
+    "requirements-specificater@takaka-agent-plugins": true,
+    "screen-specificater@takaka-agent-plugins": true,
+    "github-issue-creator@takaka-agent-plugins": true,
+    "git-commit-pusher@takaka-agent-plugins": true,
+    "plugin-improver@takaka-agent-plugins": true,
+    "code-implementer@takaka-agent-plugins": true,
+    "postgres-dev@takaka-agent-plugins": true,
+    "dev-knowledge-harvester@takaka-agent-plugins": true,
+    "backlog-manager@takaka-agent-plugins": true
+  },
+  "extraKnownMarketplaces": {
+    "takaka-agent-plugins": {
+      "source": {
+        "source": "github",
+        "repo": "takakaka-rbs/takaka-agent-plugins"
+      }
+    }
+  }
+}
