@@ -2,7 +2,7 @@
         dev-front dev-back dev stop \
         lint lint-front lint-back \
         test test-front test-back test-api \
-        storybook test-vrt \
+        storybook test-vrt test-e2e \
         check check-front check-back check-all \
         migrate build help
 
@@ -85,6 +85,11 @@ storybook:
 test-vrt:
 	@echo "⚡ [Front] VRT 実行中..."
 	cd frontend && npm run build-storybook && npm run test:vrt
+
+## E2E (Playwright。フロント・バックを自動起動。DB起動が必要)
+test-e2e:
+	@echo "⚡ E2E 実行中..."
+	cd frontend && npm run test:e2e
 
 # ─────────────────────────────────────────
 # 静的解析 + テスト まとめて実行
@@ -183,6 +188,7 @@ help:
 	@echo "  make test-api       APIテスト（openapi.yml 準拠検証。DB起動が必要）"
 	@echo "  make storybook      Storybook 起動 (http://localhost:6006)"
 	@echo "  make test-vrt       VRT（Storybookビルド → スクリーンショット比較）"
+	@echo "  make test-e2e       E2E（Playwright。フロント・バック自動起動。DB起動が必要）"
 	@echo ""
 	@echo "  make check          フロント + バック 静的解析 & テスト"
 	@echo "  make check-front    フロントのみ 静的解析 & テスト"

@@ -401,3 +401,63 @@ jobs:
           name: vrt-snapshots
           path: frontend/tests/vrt/__screenshots__/
           retention-days: 30
+
+  e2e:
+    name: E2E (Playwright)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: appdb
+          POSTGRES_USER: appuser
+          POSTGRES_PASSWORD: apppassword
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DB_HOST: localhost
+      DB_PORT: 5432
+      DB_NAME: appdb
+      DB_USER: appuser
+      DB_PASSWORD: apppassword
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-backend
+
+      - uses: ./.github/actions/setup-frontend
+
+      # jooq/generated は .gitignore 対象のため CI では毎回生成する
+      - name: Generate jOOQ sources
+        working-directory: backend
+        run: mvn flyway:migrate jooq-codegen:generate --no-transfer-progress
+
+      - name: Install Playwright browsers
+        working-directory: frontend
+        run: npx playwright install --with-deps chromium
+
+      # フロント（Vite）・バック（Spring Boot）は playwright.e2e.config.ts の webServer が起動する
+      - name: Run E2E tests
+        working-directory: frontend
+        run: npx playwright test -c playwright.e2e.config.ts
+
+      - name: Write E2E summary
+        if: always()
+        run: |
+          echo "## 🎭 E2E (Playwright)" >> $GITHUB_STEP_SUMMARY
+          echo "実行結果・スクリーンショットは Artifacts の e2e-report を確認してください" >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload E2E report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-report
+          path: |
+            frontend/playwright-report/e2e/
+            frontend/test-results/e2e/
+          retention-days: 30
