@@ -1,0 +1,6 @@
+# 自動生成コードは生成ツール（openapi-generator / openapi-typescript-codegen）が
+# LF で出力するため、常に LF で扱う。
+# Windows ホスト（core.autocrlf=true）で checkout 直後に改行コード差分として
+# 「変更あり」と誤検知され、checkout / pull がブロックされるのを防ぐ。
+backend/src/main/java/com/example/app/generated/** text eol=lf
+frontend/src/api/generated/** text eol=lf
