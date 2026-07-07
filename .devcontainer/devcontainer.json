@@ -2,6 +2,9 @@
   "name": "Full-Stack Dev (Vue3 + Spring + Postgres)",
   "dockerComposeFile": "../docker-compose.yml",
   "service": "devcontainer",
+  // devcontainer では db だけ起動する（backend/frontend コンテナは docker compose up 用。
+  // 起動すると make dev のポート 8080/5173 と競合するため）
+  "runServices": ["devcontainer", "db"],
   "workspaceFolder": "/workspace",
   "features": {
     "ghcr.io/devcontainers/features/node:1": {
