@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from "@storybook/vue3";
+import type { Decorator, Meta, StoryObj } from "@storybook/vue3";
 import UsersView from "./UsersView.vue";
 
 /**
@@ -40,16 +40,15 @@ const jsonResponse = (body: unknown, status = 200): Response =>
   });
 
 /** fetch をスタブするストーリーデコレーター */
-const withFetchStub = (handler: () => Promise<Response>) => {
-  const decorator = (story: unknown) => {
+const withFetchStub =
+  (handler: () => Promise<Response>): Decorator =>
+  (story) => {
     globalThis.fetch = handler as unknown as typeof fetch;
     return {
       components: { story },
       template: "<story />",
     };
   };
-  return decorator;
-};
 
 const meta: Meta<typeof UsersView> = {
   title: "views/UsersView",

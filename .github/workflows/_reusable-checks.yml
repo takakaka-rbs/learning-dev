@@ -109,6 +109,40 @@ jobs:
           path: frontend/eslint-result.txt
           retention-days: 30
 
+  type-check:
+    name: Type Check (vue-tsc)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-frontend
+
+      # 型エラーは npm run build（= docker イメージビルド内の vue-tsc）でしか
+      # 検出できていなかったため、軽量な型チェック専用ジョブで早期検出する
+      - name: Type check
+        working-directory: frontend
+        run: |
+          npm run type-check 2>&1 | tee type-check-result.txt
+          EXIT_CODE=${PIPESTATUS[0]}
+          echo "## 🧩 Type Check (vue-tsc)" >> $GITHUB_STEP_SUMMARY
+          if [ $EXIT_CODE -eq 0 ]; then
+            echo "✅ 型エラーなし" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ 型エラーあり" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            head -50 type-check-result.txt >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            exit $EXIT_CODE
+          fi
+
+      - name: Upload type check report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: type-check-frontend-report
+          path: frontend/type-check-result.txt
+          retention-days: 30
+
   checkstyle:
     name: Checkstyle
     runs-on: ubuntu-latest

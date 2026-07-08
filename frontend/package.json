@@ -10,6 +10,7 @@
     "build": "vue-tsc && vite build",
     "preview": "vite preview",
     "lint": "eslint . --fix",
+    "type-check": "vue-tsc --noEmit",
     "format": "prettier --write src/",
     "generate:api": "openapi-ts --input ../openapi/openapi.yml --output src/api/generated --client fetch",
     "test": "vitest run",
