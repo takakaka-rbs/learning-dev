@@ -10,10 +10,15 @@
     "build": "vue-tsc && vite build",
     "preview": "vite preview",
     "lint": "eslint . --fix",
+    "type-check": "vue-tsc --noEmit",
     "format": "prettier --write src/",
     "generate:api": "openapi-ts --input ../openapi/openapi.yml --output src/api/generated --client fetch",
     "test": "vitest run",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build",
+    "test:vrt": "playwright test -c playwright.vrt.config.ts",
+    "test:e2e": "playwright test -c playwright.e2e.config.ts"
   },
   "dependencies": {
     "vue": "^3.4.0",
@@ -36,6 +41,10 @@
     "@vitest/coverage-v8": "^1.0.0",
     "@vitest/ui": "^1.0.0",
     "jsdom": "^24.0.0",
-    "@vue/test-utils": "^2.4.0"
+    "@vue/test-utils": "^2.4.0",
+    "storybook": "^8.6.0",
+    "@storybook/vue3-vite": "^8.6.0",
+    "@playwright/test": "^1.54.0",
+    "http-server": "^14.1.1"
   }
 }

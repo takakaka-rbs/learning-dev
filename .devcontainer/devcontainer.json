@@ -2,15 +2,19 @@
   "name": "Full-Stack Dev (Vue3 + Spring + Postgres)",
   "dockerComposeFile": "../docker-compose.yml",
   "service": "devcontainer",
+  // devcontainer では db だけ起動する（backend/frontend コンテナは docker compose up 用。
+  // 起動すると make dev のポート 8080/5173 と競合するため）
+  "runServices": ["devcontainer", "db"],
   "workspaceFolder": "/workspace",
   "features": {
     "ghcr.io/devcontainers/features/node:1": {
-      "version": "20"
+      "version": "22"
     },
     "ghcr.io/devcontainers/features/java:1": {
       "version": "21",
       "installMaven": true
-    }
+    },
+    "ghcr.io/devcontainers/features/github-cli:1": {}
   },
   "customizations": {
     "vscode": {
@@ -56,6 +60,6 @@
     }
   },
   "forwardPorts": [5173, 8080, 5432],
-  "postCreateCommand": "cd /workspace && npm install && cd /workspace/frontend && npm install && cd /workspace/backend && mvn dependency:resolve -q && echo '✅ Setup complete!'",
-  "remoteUser": "root"
+  "postCreateCommand": "sudo chown -R vscode:vscode /workspace && cd /workspace && npm install && cd /workspace/frontend && npm install && cd /workspace/backend && mvn dependency:resolve -q && cd /workspace && npm install -g @anthropic-ai/claude-code@latest && claude plugin marketplace add takakaka-rbs/takaka-agent-plugins && for p in orchestrator openapi-specificater requirements-specificater screen-specificater github-issue-creator git-commit-pusher plugin-improver code-implementer postgres-dev dev-knowledge-harvester backlog-manager dependency-updater; do claude plugin install \"$p@takaka-agent-plugins\" --scope project; done && echo '✅ Setup complete!'",
+  "remoteUser": "vscode"
 }

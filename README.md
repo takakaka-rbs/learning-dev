@@ -11,7 +11,7 @@ Vue3 + Spring Boot + PostgreSQL による Spec 駆動開発（OpenAPI）テン�
 | ツール         | 用途                                                                                    |
 | -------------- | --------------------------------------------------------------------------------------- |
 | Dev Container  | ホストPCに何もインストールせず統一された開発環境を提供。VS Code + Docker だけあれば動く |
-| Docker Compose | PostgreSQL の起動・管理                                                                 |
+| Docker Compose | 全サービス（フロント・バック・PostgreSQL）のコンテナ起動・管理                          |
 | Makefile       | よく使うコマンドを1つにまとめる                                                         |
 
 ### フロントエンド
@@ -126,9 +126,39 @@ make check-all      # 静的解析 + テスト + ビルドまで
 # ビルド（生成 → フロント・バックまとめてビルド）
 make build
 
+# Docker Compose で全サービス起動 / 停止 / ログ表示
+make up
+make down
+make logs
+
 # コマンド一覧を確認
 make help
 ```
+
+---
+
+## Docker Compose で全サービス起動
+
+devcontainer を使わずに、ビルド済みイメージで全サービス（フロント・バック・DB）をまとめて起動できる。
+
+```bash
+docker compose up -d --build   # または make up
+```
+
+| サービス | URL                       | 備考                                            |
+| -------- | ------------------------- | ----------------------------------------------- |
+| フロント | http://localhost:5173     | nginx 配信。`/api` は backend へプロキシされる  |
+| バック   | http://localhost:8080/api | Spring Boot（起動時に Flyway マイグレーション） |
+| DB       | localhost:5432            | PostgreSQL 16                                   |
+
+```bash
+docker compose down            # 停止（または make down）
+docker compose logs -f         # ログ表示（または make logs）
+```
+
+- コンテナ版フロントの nginx 設定は `frontend/nginx.compose.conf` を使用する（`/api` プロキシ有効）。イメージにベイクされる `frontend/nginx.conf` は本番想定のまま。
+- VS Code の devcontainer 起動時は従来どおり `devcontainer` と `db` のみが立ち上がる（`.devcontainer/devcontainer.json` の `runServices` で制御）。`make dev` とのポート競合はない。
+- `docker compose up` と `make dev` はどちらもポート 5173 / 8080 を使うため、同時には起動できない。
 
 ---
 
@@ -277,9 +307,9 @@ main  ← 本番リリース用（直接pushしない）
 │       ├── ci.yml                   # feature ブランチ用CI
 │       ├── release-dev.yml          # dev ブランチ用リリース
 │       └── release.yml              # main ブランチ用リリース
-├── docker-compose.yml               # PostgreSQL + devcontainerの定義
+├── docker-compose.yml               # 全サービス（front/back/db/devcontainer）の定義
 ├── Makefile                         # コマンド集約
-├── commitlint.config.js             # コミットメッセージ規約設定
+├── commitlint.config.mjs            # コミットメッセージ規約設定
 ├── package.json                     # husky / commitlint のルート設定
 ├── openapi/
 │   └── openapi.yml                  # ★ API仕様（唯一の真実）

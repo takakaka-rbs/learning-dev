@@ -12,6 +12,8 @@ export default defineConfig({
   test: {
     environment: "jsdom",
     passWithNoTests: true, // テストファイルがない場合もエラーにしない
+    // Playwright のテスト（VRT / E2E）は vitest の対象外
+    exclude: ["**/node_modules/**", "**/dist/**", "tests/**"],
     reporters: [
       "default",
       // JUnit形式のXMLレポート（CI サマリー用）

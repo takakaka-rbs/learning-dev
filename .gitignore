@@ -6,6 +6,11 @@ backend/.openapi-generator
 frontend/dist/
 frontend/coverage
 
+# テスト成果物（Storybook / Playwright）
+frontend/storybook-static/
+frontend/playwright-report/
+frontend/test-results/
+
 # Node
 frontend/node_modules/
 frontend/dist/
@@ -23,3 +28,7 @@ Thumbs.db
 # Env
 .env
 .env.local
+
+# Claude Code（個人設定・ローカル作業データはコミットしない。settings.json は共有設定なのでコミットする）
+.claude/settings.local.json
+.claude/plugin-feedback/

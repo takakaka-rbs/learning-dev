@@ -1,7 +1,9 @@
 .PHONY: generate generate-front generate-back setup \
         dev-front dev-back dev stop \
+        up down logs \
         lint lint-front lint-back \
-        test test-front test-back \
+        test test-front test-back test-api \
+        storybook test-vrt test-e2e \
         check check-front check-back check-all \
         migrate build help
 
@@ -71,6 +73,25 @@ test-back:
 	@echo "⚡ [Back] テスト実行中..."
 	cd backend && mvn test --no-transfer-progress
 
+## APIテスト (Spring Boot Test + failsafe。openapi.yml を根拠に検証。DB起動が必要)
+test-api:
+	@echo "⚡ [Back] APIテスト実行中..."
+	cd backend && mvn verify -Dsurefire.skip=true -Djacoco.skip=true --no-transfer-progress
+
+## Storybook 起動 (http://localhost:6006)
+storybook:
+	cd frontend && npm run storybook
+
+## VRT (Storybook ビルド → Playwright スクリーンショット比較)
+test-vrt:
+	@echo "⚡ [Front] VRT 実行中..."
+	cd frontend && npm run build-storybook && npm run test:vrt
+
+## E2E (Playwright。フロント・バックを自動起動。DB起動が必要)
+test-e2e:
+	@echo "⚡ E2E 実行中..."
+	cd frontend && npm run test:e2e
+
 # ─────────────────────────────────────────
 # 静的解析 + テスト まとめて実行
 # ─────────────────────────────────────────
@@ -128,9 +149,26 @@ dev:
 ## 全サービス停止
 stop:
 	@echo "🛑 停止中..."
-	@pkill -f "spring-boot" || true
-	@pkill -f "vite" || true
+	@fuser -k 8080/tcp 2>/dev/null || true
+	@fuser -k 5173/tcp 2>/dev/null || true
 	@echo "✅ 停止完了"
+
+# ─────────────────────────────────────────
+# Docker Compose（フロント・バック・DB を全部コンテナで起動）
+# ─────────────────────────────────────────
+
+## 全サービスをビルドして起動（front: http://localhost:5173 / back: http://localhost:8080/api）
+up:
+	docker compose up -d --build
+	@echo "✅ 起動完了: フロント http://localhost:5173 / バック http://localhost:8080/api"
+
+## 全サービス停止・コンテナ削除
+down:
+	docker compose down
+
+## 全サービスのログを表示
+logs:
+	docker compose logs -f
 
 # ─────────────────────────────────────────
 # ビルド
@@ -165,6 +203,10 @@ help:
 	@echo "  make test           フロント + バック テスト"
 	@echo "  make test-front     フロントのみテスト"
 	@echo "  make test-back      バックのみテスト"
+	@echo "  make test-api       APIテスト（openapi.yml 準拠検証。DB起動が必要）"
+	@echo "  make storybook      Storybook 起動 (http://localhost:6006)"
+	@echo "  make test-vrt       VRT（Storybookビルド → スクリーンショット比較）"
+	@echo "  make test-e2e       E2E（Playwright。フロント・バック自動起動。DB起動が必要）"
 	@echo ""
 	@echo "  make check          フロント + バック 静的解析 & テスト"
 	@echo "  make check-front    フロントのみ 静的解析 & テスト"
@@ -174,6 +216,10 @@ help:
 	@echo "  make dev-front      フロント開発サーバー起動"
 	@echo "  make dev-back       バック開発サーバー起動"
 	@echo "  make stop           全サービス停止"
+	@echo ""
+	@echo "  make up             Docker Compose で全サービス起動（フロント・バック・DB）"
+	@echo "  make down           Docker Compose の全サービス停止・削除"
+	@echo "  make logs           Docker Compose のログ表示"
 	@echo ""
 	@echo "  make build          ビルド（生成 → フロント・バック）"
 	@echo ""
