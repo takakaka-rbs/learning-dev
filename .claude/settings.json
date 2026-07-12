@@ -14,7 +14,8 @@
     "code-implementer@takaka-agent-plugins": true,
     "postgres-dev@takaka-agent-plugins": true,
     "dev-knowledge-harvester@takaka-agent-plugins": true,
-    "backlog-manager@takaka-agent-plugins": true
+    "backlog-manager@takaka-agent-plugins": true,
+    "dependency-updater@takaka-agent-plugins": true
   },
   "extraKnownMarketplaces": {
     "takaka-agent-plugins": {
